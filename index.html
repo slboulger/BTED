@@ -1,0 +1,3617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTED</title>
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #f4f1ec;
+  --card:    #ffffff;
+  --accent:  #3d6b9e;
+  --accent2: #c07a2a;
+  --green:   #4a7c59;
+  --red:     #b83232;
+  --text:    #222;
+  --muted:   #6b6b6b;
+  --border:  #ddd;
+  --r:       12px;
+  --sh:      0 4px 24px rgba(0,0,0,.10);
+}
+
+body {
+  font-family: 'Georgia', serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Screens ── */
+.screen { display: none; width: 100%; max-width: 720px; padding: 20px; }
+.screen.active { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+
+.card {
+  background: var(--card); border-radius: var(--r);
+  box-shadow: var(--sh); padding: 34px 38px; width: 100%;
+}
+
+h1 { font-size: 1.85rem; font-weight: normal; margin-bottom: 6px; }
+h2 { font-size: 1.35rem; font-weight: normal; margin-bottom: 10px; }
+p  { line-height: 1.75; color: #444; margin-bottom: 10px; }
+p:last-child { margin-bottom: 0; }
+.muted { color: var(--muted); font-size: .88rem; }
+
+input[type="text"], input[type="password"], input[type="number"] {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 1rem; font-family: inherit; margin-top: 6px; outline: none;
+  transition: border-color .2s;
+}
+input:focus { border-color: var(--accent); }
+label { font-size: .93rem; color: #555; }
+
+.btn {
+  display: inline-block; padding: 11px 26px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 8px; font-size: 1rem;
+  font-family: inherit; cursor: pointer; transition: background .2s, transform .1s;
+}
+.btn:hover  { background: #2f5480; }
+.btn:active { transform: scale(.97); }
+.btn.sec {
+  background: transparent; color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+.btn.sec:hover { background: #edf3fa; }
+.btn.danger { background: var(--red); }
+.btn.danger:hover { background: #962929; }
+
+.row   { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.spacer { height: 8px; }
+hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+/* Trial badge */
+.trial-badge {
+  background: var(--accent); color: #fff;
+  border-radius: 20px; padding: 3px 14px;
+  font-size: .85rem; display: inline-block; margin-bottom: 6px;
+}
+
+/* Progress dots */
+.dots { display: flex; gap: 8px; justify-content: center; }
+.dots span {
+  width: 11px; height: 11px; border-radius: 50%; background: #ccc;
+  transition: background .3s;
+}
+.dots span.done   { background: var(--green); }
+.dots span.active { background: var(--accent2); }
+
+/* ═══════════════════════════════════════
+   ANIMATION STAGE
+═══════════════════════════════════════ */
+#anim-wrap { position: relative; width: 640px; }
+#anim-stage {
+  width: 640px; height: 360px;
+  border-radius: var(--r); overflow: hidden;
+  position: relative; box-shadow: var(--sh);
+  background: #87ceeb;
+}
+#anim-progress-bar {
+  width: 640px; height: 5px; background: #ddd;
+  border-radius: 0 0 var(--r) var(--r); overflow: hidden;
+  display: none;
+}
+#anim-progress-fill {
+  height: 100%; width: 0%; background: var(--accent);
+  transition: width .15s linear;
+}
+
+/* ── Generic helpers ── */
+.abs  { position: absolute; }
+.full { inset: 0; }
+
+/* ══════════════════════════════════════════════════════
+   TRIAL 1 — MORNING / SCHOOL RUN
+   Scene: suburban street, dawn to daylight.
+   Event 1 @8s:  child picks up backpack
+   Event 2 @16s: child pushes open school gate
+   Interval: 8 s
+══════════════════════════════════════════════════════ */
+
+/* Sky — bright cartoon morning sky */
+#t1-sky {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    #3a9edb 0%, #6ec8f0 35%,
+    #d8f0b8 35%, #a8d870 60%,
+    #78c040 100%);
+  animation: t1-sky-anim 30s linear forwards; animation-play-state: paused;
+}
+@keyframes t1-sky-anim {
+  0%   { background: linear-gradient(to bottom, #e8952a 0%, #f5c860 22%, #d0eeaa 38%, #80c048 100%); }
+  40%  { background: linear-gradient(to bottom, #3a9edb 0%, #6ec8f0 35%, #d8f0b8 35%, #78c040 100%); }
+  100% { background: linear-gradient(to bottom, #1a8acc 0%, #50b8e8 35%, #d8f0b8 35%, #78c040 100%); }
+}
+/* Horizon glow */
+#t1-sky::before {
+  content: ''; position: absolute; bottom: 37%; left: 0; right: 0; height: 50px;
+  background: linear-gradient(to top, rgba(140,210,100,.6), transparent);
+}
+/* Distant rolling hills */
+#t1-sky::after {
+  content: ''; position: absolute; bottom: 36%; left: 0; right: 0; height: 30px;
+  background:
+    radial-gradient(ellipse 220px 60px at 15% 100%, #68b838 50%, transparent 51%),
+    radial-gradient(ellipse 280px 80px at 50% 100%, #78cc48 50%, transparent 51%),
+    radial-gradient(ellipse 200px 55px at 82% 100%, #60aa30 50%, transparent 51%);
+}
+
+/* Road and pavement */
+#t1-road {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 110px;
+  background: linear-gradient(to bottom, #7a7a8a 0%, #58586a 100%);
+  box-shadow: inset 0 4px 8px rgba(0,0,0,.2);
+}
+/* Road markings — bright dashes */
+#t1-road::before {
+  content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 8px;
+  background: repeating-linear-gradient(90deg, #f0e050 0, #f0e050 48px, transparent 48px, transparent 80px);
+  transform: translateY(-50%);
+}
+/* Kerb — thick bright kerb */
+#t1-road::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(to bottom, #d8d0c0, #b0a898);
+  border-bottom: 2px solid #909080;
+}
+#t1-pavement {
+  position: absolute; left: 0; right: 0; bottom: 110px; height: 30px;
+  background: linear-gradient(to bottom, #e8decc, #d4c8b0);
+  border-top: 3px solid #c8be9a;
+}
+/* Pavement cracks / joints */
+#t1-pavement::after {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0, transparent 79px, rgba(140,130,110,.45) 79px, rgba(140,130,110,.45) 82px);
+}
+
+/* Sun — big cartoon sun with glow */
+#t1-sun {
+  position: absolute; top: 60px; right: 80px;
+  width: 70px; height: 70px;
+  background: radial-gradient(circle, #fff176 30%, #ffe140 60%, #ffcc0088 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 8px rgba(255,225,80,.35), 0 0 0 18px rgba(255,225,80,.18), 0 0 40px 20px rgba(255,200,50,.25);
+  animation: t1-sun-anim 30s linear forwards; animation-play-state: paused;
+}
+@keyframes t1-sun-anim {
+  0%   { top: 120px; right: 80px; opacity: .7;  transform: scale(.75); }
+  40%  { top: 45px;  right: 75px; opacity: 1;   transform: scale(1); }
+  100% { top: 30px;  right: 70px; opacity: 1;   transform: scale(1.05); }
+}
+/* Sun rays */
+#t1-sun::before {
+  content: ''; position: absolute; inset: -14px;
+  background: repeating-conic-gradient(rgba(255,230,50,.45) 0deg 20deg, transparent 20deg 40deg);
+  border-radius: 50%;
+  animation: t1-sun-spin 8s linear infinite; animation-play-state: paused;
+}
+@keyframes t1-sun-spin { to { transform: rotate(360deg); } }
+/* Inner glow */
+#t1-sun::after {
+  content: ''; position: absolute; inset: 12px;
+  background: radial-gradient(circle, rgba(255,255,255,.6), transparent);
+  border-radius: 50%;
+}
+
+/* Trees — chunky cartoon style */
+#t1-tree2 { position: absolute; bottom: 140px; left: 255px; }
+.tree-trunk {
+  width: 22px; height: 58px;
+  background: linear-gradient(to right, #6b3e10, #a06020, #6b3e10);
+  margin: 0 auto; border-radius: 4px 4px 2px 2px;
+  border: 2.5px solid #4a2a08;
+  position: relative; z-index: 1;
+}
+/* Trunk texture knot */
+.tree-trunk::before {
+  content: ''; position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+  width: 10px; height: 8px; background: #5a3010;
+  border-radius: 50%; border: 1.5px solid #3a1e04;
+}
+.tree-top {
+  width: 88px; height: 94px;
+  background: radial-gradient(ellipse at 38% 48%, #6ec840 0%, #48a820 50%, #287010 100%);
+  border-radius: 50% 50% 40% 40%; margin: -80px auto 0;
+  border: 3px solid #1e5c08;
+  box-shadow: inset -10px -8px 0 rgba(0,0,0,.15), 4px 6px 12px rgba(0,80,0,.25);
+  position: relative; z-index: 2;
+}
+/* Tree highlight */
+.tree-top::before {
+  content: ''; position: absolute; top: 14px; left: 16px;
+  width: 26px; height: 20px;
+  background: rgba(200,255,120,.3); border-radius: 50%;
+}
+/* Second foliage bump */
+.tree-top::after {
+  content: ''; position: absolute; top: -18px; left: 12px;
+  width: 64px; height: 50px;
+  background: radial-gradient(ellipse, #78d848 20%, #48a820 80%);
+  border-radius: 50%;
+  border: 2.5px solid #1e5c08;
+  z-index: -1;
+}
+
+/* House — cheerful cartoon suburban house */
+#t1-house {
+  position: absolute; right: 20px; bottom: 140px;
+  width: 220px; height: 200px;
+}
+.h-roof {
+  position: absolute; top: 0; left: 0; width: 0; height: 0;
+  border-left: 110px solid transparent; border-right: 110px solid transparent;
+  border-bottom: 78px solid #c8403a;
+  filter: drop-shadow(0 -3px 6px rgba(0,0,0,.18));
+}
+/* Roof tile lines */
+.h-roof::after {
+  content: ''; position: absolute; top: 12px; left: -100px;
+  width: 200px; height: 64px;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0, transparent 11px,
+    rgba(0,0,0,.14) 11px, rgba(0,0,0,.14) 13px
+  );
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+.h-chimney {
+  position: absolute; top: 6px; right: 54px;
+  width: 24px; height: 46px;
+  background: repeating-linear-gradient(0deg,
+    #a04848 0px, #a04848 10px, #7a3030 10px, #7a3030 12px);
+  border: 2.5px solid #7a3030; z-index: 2;
+}
+.h-chimney::after {
+  content: ''; position: absolute; top: -6px; left: -5px;
+  width: 34px; height: 8px; background: #7a3030; border-radius: 3px 3px 0 0;
+}
+/* Smoke puff */
+.chimney-smoke {
+  position: absolute; top: -22px; left: 3px;
+  width: 16px; height: 16px; background: rgba(220,220,220,.65);
+  border-radius: 50%; border: 2px solid rgba(180,180,180,.4);
+  animation: chimney-smoke 2.5s ease-in-out infinite; animation-play-state: paused;
+}
+.chimney-smoke::before {
+  content: ''; position: absolute; top: -10px; left: -3px;
+  width: 12px; height: 12px; background: rgba(210,210,210,.45);
+  border-radius: 50%;
+}
+@keyframes chimney-smoke {
+  0%   { transform: translateY(0) scale(1);      opacity: .7; }
+  100% { transform: translateY(-22px) scale(2);  opacity: 0; }
+}
+.h-wall {
+  position: absolute; bottom: 0; left: 0;
+  width: 220px; height: 130px;
+  background: linear-gradient(to bottom, #f2e0c0, #e8d0a8);
+  border: 3px solid #c8a068;
+}
+/* Brick rows */
+.h-wall::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg,
+      transparent 0, transparent 14px,
+      rgba(180,120,60,.25) 14px, rgba(180,120,60,.25) 16px),
+    repeating-linear-gradient(90deg,
+      transparent 0, transparent 38px,
+      rgba(180,120,60,.12) 38px, rgba(180,120,60,.12) 40px);
+}
+/* Roof-wall join shadow */
+.h-wall::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 12px;
+  background: linear-gradient(to bottom, rgba(0,0,0,.2), transparent);
+}
+.h-window {
+  position: absolute; top: 18px; left: 18px;
+  width: 60px; height: 56px; background: #b8e8ff;
+  border: 3.5px solid #7a6040; border-radius: 4px;
+  box-shadow: inset 0 0 14px rgba(255,255,220,.6), 0 0 8px rgba(120,200,255,.3);
+}
+/* Window glow (warm interior light) */
+.h-window {
+  animation: t1-window-glow 3s ease-in-out infinite; animation-play-state: paused;
+}
+@keyframes t1-window-glow {
+  0%,100% { box-shadow: inset 0 0 14px rgba(255,255,220,.6), 0 0 8px rgba(120,200,255,.3); background: #b8e8ff; }
+  50%     { box-shadow: inset 0 0 22px rgba(255,240,160,.9), 0 0 14px rgba(255,220,100,.4); background: #d8f0ff; }
+}
+.h-window::before, .h-window::after {
+  content:''; position: absolute; background: #7a6040;
+}
+.h-window::before { width: 2.5px; height: 100%; left: calc(50% - 1px); top: 0; }
+.h-window::after  { width: 100%; height: 2.5px; top: calc(50% - 1px); left: 0; }
+/* Windowsill */
+.h-window-sill {
+  position: absolute; top: 74px; left: 13px;
+  width: 70px; height: 9px; background: #c09050;
+  border-radius: 3px; box-shadow: 0 3px 5px rgba(0,0,0,.2);
+  border-bottom: 2px solid #a07030;
+}
+/* Flower box on sill */
+.h-window-sill::before {
+  content: ''; position: absolute; bottom: 0; left: 5px; right: 5px; height: 8px;
+  background: #8a4a18; border-radius: 2px; border: 1px solid #6a3010;
+}
+.h-window-sill::after {
+  content: ''; position: absolute; bottom: 5px; left: 8px;
+  width: 3px; height: 10px; background: #38a018;
+  border-radius: 1px;
+  box-shadow: 6px -4px 0 #e83838, 12px 0 0 #38a018, 18px -3px 0 #e83838, 24px 1px 0 #38a018, 30px -4px 0 #f06820, 36px -1px 0 #38a018;
+}
+/* Door frame — sits behind the door panel, gives depth */
+.h-door-frame {
+  position: absolute; bottom: 0; right: 28px;
+  width: 58px; height: 90px;
+  background: #1a4028;
+  border-radius: 6px 6px 0 0;
+  z-index: 1;
+}
+/* Door frame step at base */
+.h-door-frame::before {
+  content: ''; position: absolute; bottom: 0; left: -4px; right: -4px; height: 7px;
+  background: #c8a068; border-radius: 2px;
+}
+/* Interior warm light revealed when open */
+.h-door-frame::after {
+  content: ''; position: absolute; inset: 3px 3px 0;
+  background: linear-gradient(160deg, #f5d98e 0%, #e8b860 60%, #c08030 100%);
+  border-radius: 4px 4px 0 0;
+  opacity: 0; transition: opacity .4s ease;
+}
+.h-door-frame.door-open::after { opacity: 1; }
+.h-door {
+  position: absolute; bottom: 0; right: 30px;
+  width: 54px; height: 86px; background: #2d6644;
+  border: 2.5px solid #1a4028; border-radius: 5px 5px 0 0;
+  z-index: 2;
+  transform-origin: left center;
+  transition: transform .6s cubic-bezier(.4,0,.2,1);
+}
+/* Door moulding — outer raised border */
+.h-door::before {
+  content: ''; position: absolute; inset: 5px;
+  border: 2px solid rgba(255,255,255,.12);
+  border-radius: 3px; pointer-events: none;
+}
+.h-door.open { transform: perspective(220px) rotateY(-78deg); }
+/* Door panels (top + bottom raised panel look) */
+.h-door-panel {
+  position: absolute; top: 7px; left: 5px; right: 5px; bottom: 7px;
+  pointer-events: none;
+}
+.h-door-panel::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 42%;
+  border: 2px solid #1a4028; border-radius: 3px;
+  background: transparent;
+}
+.h-door-panel::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 44%;
+  border: 2px solid #1a4028; border-radius: 3px;
+  background: transparent;
+}
+/* Letterbox slot */
+.h-door-slot {
+  position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+  width: 22px; height: 5px;
+  background: #1a4028; border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.4);
+}
+.h-knob {
+  position: absolute; right: 9px; top: 40px;
+  width: 11px; height: 11px;
+  background: radial-gradient(circle at 35% 30%, #f8e060, #c89020);
+  border-radius: 50%; border: 1.5px solid #a07010;
+  box-shadow: 1px 1px 3px rgba(0,0,0,.35), 0 0 5px rgba(220,170,20,.4);
+  z-index: 3;
+}
+/* House number */
+.h-num {
+  position: absolute; top: 10px; right: 36px;
+  font-size: 12px; font-family: sans-serif; font-weight: bold;
+  color: #1a4028;
+}
+
+/* Path from door to pavement */
+
+/* Post box — bigger, more realistic */
+#t1-postbox {
+  position: absolute; left: 195px; bottom: 140px;
+  width: 28px; height: 48px;
+  background: linear-gradient(to right, #e02020 0%, #c81818 60%, #a81010 100%);
+  border-radius: 12px 12px 3px 3px;
+  border: 2px solid #901818;
+  box-shadow: 2px 2px 4px rgba(0,0,0,.3);
+}
+#t1-postbox::before {
+  content: 'ROYAL\AMAIL'; white-space: pre;
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  font-size: 4px; font-family: sans-serif; font-weight: bold;
+  color: rgba(255,255,200,.6); text-align: center; letter-spacing: .5px;
+  line-height: 1.4;
+}
+#t1-postbox::after {
+  content: ''; position: absolute; top: -7px; left: 3px;
+  width: 20px; height: 9px; background: #c81818;
+  border-radius: 50%; border: 2px solid #901818;
+}
+
+/* School gate — brick pillars + iron bars + arch sign */
+#t1-gate {
+  position: absolute; left: -10px; bottom: 140px;
+  width: 90px; height: 120px;
+}
+/* Brick pillars */
+.gate-pillar {
+  position: absolute; bottom: 0; width: 14px; height: 110px;
+  background: repeating-linear-gradient(0deg,
+    #9b4a28 0px, #9b4a28 12px, #7a3820 12px, #7a3820 14px);
+  border: 1px solid #6a3018;
+  z-index: 3;
+}
+.gate-pillar.l { left: 0; }
+.gate-pillar.r { right: 0; }
+/* Pillar caps */
+.gate-pillar::after {
+  content: ''; position: absolute; top: -8px; left: -3px;
+  width: 20px; height: 8px;
+  background: #b86040; border-radius: 2px 2px 0 0;
+  border: 1px solid #8a4020;
+}
+/* Gate panel (iron bars) */
+.gate-panel {
+  position: absolute; left: 14px; top: 18px;
+  width: 62px; height: 90px; background: transparent;
+  transform-origin: left center; transition: transform .7s ease;
+  z-index: 1;
+}
+.gate-rail {
+  position: absolute; left: 0; height: 100%; width: 5px;
+  background: linear-gradient(to right, #606060, #888, #606060);
+  border-radius: 0 0 3px 3px;
+}
+.gate-rail::after {
+  content: ''; position: absolute; top: -6px; left: -2px;
+  width: 9px; height: 12px;
+  background: #505050; border-radius: 1px 1px 0 0;
+  border-top: 3px solid #404040;
+}
+.gate-rail:nth-child(1) { left: 0; }
+.gate-rail:nth-child(2) { left: 16px; }
+.gate-rail:nth-child(3) { left: 32px; }
+.gate-rail:nth-child(4) { left: 48px; }
+/* Horizontal bars */
+.gate-h {
+  position: absolute; left: 0; right: 0; height: 5px;
+  background: linear-gradient(to bottom, #888, #666);
+}
+.gate-h.top { top: 6px; }
+.gate-h.bot { top: 50px; }
+#t1-gate.open .gate-panel { transform: perspective(200px) rotateY(-75deg); }
+
+/* School sign arch — floats above the gate bars */
+.gate-arch {
+  position: absolute; top: -4px; left: -2px; right: -2px; height: 22px;
+  background: #1a4a1a; border: 2px solid #0a2a0a;
+  border-radius: 3px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+  z-index: 5;
+}
+.gate-arch span {
+  font-size: 9px; font-family: sans-serif; font-weight: bold;
+  color: #f0f0a0; letter-spacing: 2px;
+}
+
+/* Backpack on floor — bigger with visible straps */
+#t1-backpack {
+  position: absolute; left: 345px; bottom: 140px;
+  width: 34px; height: 40px;
+  z-index: 5;
+  animation: t1-bag-anim 30s linear forwards; animation-play-state: paused;
+}
+/* Main body */
+#t1-backpack::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, #5080c0 0%, #3a60a0 60%, #2a4880 100%);
+  border: 2.5px solid #2a4880; border-radius: 5px;
+  box-shadow: 2px 3px 6px rgba(0,0,0,.3);
+}
+/* Front pocket */
+#t1-backpack::after {
+  content: ''; position: absolute; bottom: 4px; left: 4px; right: 4px; height: 14px;
+  background: #3a60a0; border: 1.5px solid #2a4880; border-radius: 3px;
+}
+/* Straps rendered via child */
+.bp-strap-l, .bp-strap-r {
+  position: absolute; top: -4px; width: 5px; height: 18px;
+  background: #2a4880; border-radius: 2px;
+}
+.bp-strap-l { left: 6px; transform: rotate(-8deg); }
+.bp-strap-r { right: 6px; transform: rotate(8deg); }
+@keyframes t1-bag-anim {
+  0%,26%  { opacity: 1; }
+  28%     { opacity: 0; }
+  100%    { opacity: 0; }
+}
+
+/* Stone on pavement */
+#t1-stone {
+  position: absolute; bottom: 143px; left: 185px;
+  width: 12px; height: 10px; background: #aaa; border-radius: 50%;
+  box-shadow: 1px 1px 2px rgba(0,0,0,.3);
+  animation: t1-stone-anim 30s linear forwards; animation-play-state: paused;
+}
+@keyframes t1-stone-anim {
+  0%, 100% { left: 185px; bottom: 143px; }
+}
+
+/* Bird on tree */
+#t1-bird {
+  position: absolute; top: 78px; left: 65px;
+  width: 16px; height: 10px;
+  animation: t1-bird-anim 30s linear forwards; animation-play-state: paused;
+}
+#t1-bird::before {
+  content: ''; position: absolute;
+  border-top: 3px solid #443; border-radius: 50% 50% 0 0;
+  width: 10px; height: 7px; left: 0; top: 0;
+}
+#t1-bird::after {
+  content: ''; position: absolute;
+  border-top: 3px solid #443; border-radius: 50% 50% 0 0;
+  width: 8px; height: 6px; left: 8px; top: 1px;
+}
+@keyframes t1-bird-anim {
+  0%,48%  { opacity: 1; left: 65px; top: 78px; }
+  52%     { opacity: 0; left: 190px; top: 55px; }
+  100%    { opacity: 0; }
+}
+
+/* Clouds — T1 */
+#t1-cloud1 {
+  position: absolute; top: 28px; left: -120px; width: 100px; height: 32px;
+  background: #fff; border-radius: 40px; opacity: .82;
+  animation: t1-c1 28s linear forwards; animation-play-state: paused;
+}
+#t1-cloud1::before {
+  content:''; position:absolute; width:54px; height:54px; background:#fff;
+  border-radius:50%; top:-24px; left:14px;
+}
+#t1-cloud1::after {
+  content:''; position:absolute; width:40px; height:40px; background:#fff;
+  border-radius:50%; top:-18px; left:52px;
+}
+#t1-cloud2 {
+  position: absolute; top: 55px; left: 480px; width: 76px; height: 24px;
+  background: #fff; border-radius: 40px; opacity: .68;
+  animation: t1-c2 38s linear forwards; animation-play-state: paused;
+}
+#t1-cloud2::before {
+  content:''; position:absolute; width:38px; height:38px; background:#fff;
+  border-radius:50%; top:-16px; left:10px;
+}
+@keyframes t1-c1 { 0%{left:-120px} 100%{left:760px} }
+@keyframes t1-c2 { 0%{left:480px}  100%{left:760px} }
+
+/* ══════════════════════════════════════════════════════
+   TRIAL 2 — PARK AFTERNOON
+   Event 1 @6s:  child sits on bench
+   Event 2 @20s: child throws leaf into pond
+   Interval: 14 s
+══════════════════════════════════════════════════════ */
+
+#t2-sky {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    #2090d8 0%, #50b8f0 32%,
+    #70cc48 42%, #48a828 100%);
+}
+/* Horizon glow */
+#t2-sky::before {
+  content: ''; position: absolute; bottom: 38%; left: 0; right: 0; height: 40px;
+  background: linear-gradient(to top, rgba(100,200,60,.5), transparent);
+}
+/* Distant treeline silhouette */
+#t2-sky::after {
+  content: ''; position: absolute; bottom: 37%; left: 0; right: 0; height: 24px;
+  background:
+    radial-gradient(ellipse 180px 50px at 10% 100%, #38a020 50%, transparent 51%),
+    radial-gradient(ellipse 240px 65px at 40% 100%, #48b830 50%, transparent 51%),
+    radial-gradient(ellipse 160px 45px at 68% 100%, #40aa28 50%, transparent 51%),
+    radial-gradient(ellipse 200px 55px at 90% 100%, #389820 50%, transparent 51%);
+}
+
+/* Gravel path */
+#t2-path {
+  position: absolute; bottom: 85px; left: 0; right: 0; height: 32px;
+  background: repeating-linear-gradient(90deg, #e0d098 0, #e0d098 32px, #d0c078 32px, #d0c078 64px);
+  border-top: 3.5px solid #c0a848; border-bottom: 2.5px solid #a89030;
+}
+/* Path edging — brighter rounded stones */
+#t2-path::before {
+  content: ''; position: absolute; top: -8px; left: 0; right: 0; height: 8px;
+  background: repeating-linear-gradient(90deg, #909870 0, #909870 16px, #b0bc88 16px, #b0bc88 32px);
+  border-radius: 4px 4px 0 0;
+  opacity: .8;
+}
+/* Path bottom shadow */
+#t2-path::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 6px;
+  background: rgba(0,0,0,.1);
+}
+
+#t2-grass-f {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 85px;
+  background: linear-gradient(to bottom, #7cd860 0%, #50b038 60%, #389028 100%);
+  border-top: 3px solid #60c040;
+}
+/* Grass tufts — more vivid */
+#t2-grass-f::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 16px;
+  background: repeating-linear-gradient(90deg,
+    transparent 0, transparent 10px,
+    #68c840 10px, #68c840 14px,
+    transparent 14px, transparent 24px);
+}
+/* Flowers in grass — larger and brighter */
+#t2-grass-f::after {
+  content: ''; position: absolute; top: 6px; left: 20px;
+  width: 4px; height: 12px; background: #38b018;
+  border-radius: 1px;
+  box-shadow:
+    16px 3px 0 #38b018, 34px -2px 0 #38b018, 52px 4px 0 #38b018, 70px 1px 0 #38b018,
+    6px -10px 0 #f8e028, 22px -8px 0 #e83838, 40px -11px 0 #f8e028,
+    58px -9px 0 #e83838, 76px -10px 0 #f87028;
+}
+
+/* Bench — chunky cartoon bench with back rest */
+#t2-bench {
+  position: absolute; left: 35px; bottom: 117px;
+  width: 120px; height: 70px;
+}
+/* Seat platform */
+.bench-seat {
+  position: absolute; bottom: 26px; left: 0; right: 0; height: 12px;
+  background: linear-gradient(to bottom, #c89858, #9a7038);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0,0,0,.3);
+  border-top: 2.5px solid #e8b878;
+  border-bottom: 2px solid #6a4818;
+}
+/* Seat plank detail */
+.bench-seat::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: repeating-linear-gradient(90deg, transparent 0, transparent 28px, rgba(0,0,0,.1) 28px, rgba(0,0,0,.1) 30px);
+  border-radius: 4px 4px 0 0;
+}
+/* Back rest */
+/* (removed — bench now has seat + two legs only) */
+/* Legs */
+.bench-leg-l, .bench-leg-r {
+  position: absolute; bottom: 0; width: 10px; height: 30px;
+  background: linear-gradient(to right, #7a5028, #a07848);
+  border-radius: 3px 3px 4px 4px;
+  border: 1.5px solid #5a3810;
+}
+.bench-leg-l { left: 14px; transform: rotate(-7deg); transform-origin: top center; }
+.bench-leg-r { right: 14px; transform: rotate(7deg); transform-origin: top center; }
+
+/* Pond — bigger, vivid, shimmer */
+#t2-pond {
+  position: absolute; right: 30px; bottom: 86px;
+  width: 190px; height: 85px;
+  background: radial-gradient(ellipse at 35% 40%, #b0e8ff 0%, #3aa8e8 45%, #1868b0 100%);
+  border-radius: 55% 45% 50% 50%;
+  border: 3.5px solid #1058a0;
+  box-shadow: 0 6px 20px rgba(0,80,200,.35), inset 0 -6px 16px rgba(0,40,120,.25);
+  overflow: hidden;
+}
+/* Shimmer lines */
+#t2-pond::before {
+  content: ''; position: absolute; top: 20%; left: 8%; width: 52%; height: 4px;
+  background: rgba(255,255,255,.5); border-radius: 3px; transform: rotate(-5deg);
+  animation: t2-shimmer 3s ease-in-out infinite; animation-play-state: paused;
+}
+@keyframes t2-shimmer { 0%,100%{opacity:.5} 50%{opacity:.9} }
+#t2-pond::after {
+  content: ''; position: absolute; top: 58%; left: 24%; width: 36%; height: 3px;
+  background: rgba(255,255,255,.3); border-radius: 2px; transform: rotate(-2deg);
+}
+/* Duck — big, colourful, clearly a duck */
+#t2-duck {
+  position: absolute; right: 90px; bottom: 128px;
+  width: 28px; height: 18px;
+  animation: t2-duck-anim 30s linear forwards; animation-play-state: paused;
+}
+#t2-duck::before { /* body */
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse, #f8e840 55%, #d8c010 100%);
+  border-radius: 55% 45% 40% 60%;
+  border: 2px solid #b8a010;
+}
+#t2-duck::after { /* head */
+  content: ''; position: absolute; top: -9px; right: -4px;
+  width: 15px; height: 15px;
+  background: radial-gradient(circle, #50a840 50%, #208020 100%);
+  border-radius: 50%; border: 2px solid #106010;
+  box-shadow: 5px 4px 0 #e87010; /* beak */
+}
+@keyframes t2-duck-anim {
+  0%   { right: 90px;  bottom: 128px; }
+  40%  { right: 70px;  bottom: 130px; }
+  70%  { right: 50px;  bottom: 128px; }
+  100% { right: 40px;  bottom: 128px; }
+}
+
+/* Ripple */
+#t2-ripple {
+  position: absolute; right: 118px; bottom: 110px;
+  width: 24px; height: 12px;
+  border: 2.5px solid rgba(255,255,255,.7); border-radius: 50%;
+  opacity: 0;
+  animation: t2-ripple-anim 30s linear forwards; animation-play-state: paused;
+}
+#t2-ripple2 {
+  position: absolute; right: 108px; bottom: 106px;
+  width: 44px; height: 22px;
+  border: 1.5px solid rgba(255,255,255,.4); border-radius: 50%;
+  opacity: 0;
+  animation: t2-ripple2-anim 30s linear forwards; animation-play-state: paused;
+}
+@keyframes t2-ripple-anim {
+  0%,51%   { opacity: 0; transform: scale(.5); }
+  54%      { opacity: 1; transform: scale(1); }
+  58%      { opacity: 0; transform: scale(1.7); }
+  100%     { opacity: 0; }
+}
+@keyframes t2-ripple2-anim {
+  0%,52%   { opacity: 0; }
+  55%      { opacity: .7; }
+  59%      { opacity: 0; }
+  100%     { opacity: 0; }
+}
+
+/* Trees */
+#t2-tree1 { position: absolute; bottom: 117px; left: 195px; z-index: 2; }
+#t2-tree2 { position: absolute; bottom: 117px; right: 220px; z-index: 2; }
+
+/* Dog — large and clearly visible */
+#t2-dog {
+  position: absolute; bottom: 117px; left: -70px;
+  z-index: 6;
+  animation: t2-dog-anim 30s linear forwards; animation-play-state: paused;
+}
+.dog-body {
+  width: 54px; height: 26px;
+  background: radial-gradient(ellipse at 45% 40%, #d88848 40%, #b06030 100%);
+  border-radius: 12px; position: relative;
+  border: 2.5px solid #8a4820;
+  box-shadow: inset -4px -2px 0 rgba(0,0,0,.15);
+}
+.dog-head {
+  width: 28px; height: 26px;
+  background: radial-gradient(circle at 42% 40%, #d88848, #b06030);
+  border-radius: 50%;
+  position: absolute; top: -12px; right: -8px;
+  border: 2.5px solid #8a4820;
+  box-shadow: inset -2px -2px 0 rgba(0,0,0,.12);
+}
+.dog-ear {
+  width: 13px; height: 18px; background: #9a5020;
+  border-radius: 50% 50% 65% 35%; position: absolute; top: -10px; right: 6px;
+  border: 2px solid #7a3810;
+}
+.dog-snout {
+  width: 12px; height: 10px; background: #c07038;
+  border-radius: 4px 4px 6px 6px; position: absolute; bottom: 0; right: -5px;
+  border: 1.5px solid #8a4820;
+}
+.dog-snout::after {
+  content: ''; position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
+  width: 6px; height: 5px; background: #0a0500; border-radius: 50%;
+}
+/* Nose */
+.dog-snout::before {
+  content: ''; position: absolute; top: -3px; left: 50%; transform: translateX(-50%);
+  width: 7px; height: 5px; background: #1a0800; border-radius: 50%;
+}
+.dog-tail {
+  width: 22px; height: 8px;
+  background: radial-gradient(ellipse, #d88848, #b06030);
+  border-radius: 0 8px 8px 0;
+  position: absolute; top: -4px; left: -20px;
+  transform-origin: right center;
+  border: 2px solid #8a4820;
+  animation: dog-tail-wag 0.35s ease-in-out infinite; animation-play-state: paused;
+}
+@keyframes dog-tail-wag { 0%,100%{ transform: rotate(-30deg); } 50%{ transform: rotate(30deg); } }
+.dog-leg { width: 8px; height: 16px; background: #b06030; border-radius: 3px; position: absolute; bottom: -15px;
+  border: 1.5px solid #8a4820;
+  animation: dog-leg-run 0.35s ease-in-out infinite; animation-play-state: paused;
+}
+.dog-leg.fl { left: 10px; animation-delay: 0s; }
+.dog-leg.fr { left: 22px; animation-delay: .175s; }
+.dog-leg.rl { right: 14px; animation-delay: .175s; }
+.dog-leg.rr { right: 4px; animation-delay: 0s; }
+@keyframes dog-leg-run {
+  0%,100% { transform: rotate(-20deg); }
+  50%     { transform: rotate(20deg); }
+}
+@keyframes t2-dog-anim {
+  0%   { left: -70px; }
+  28%  { left: 700px; }
+  100% { left: 700px; }
+}
+
+/* Sandwich wrapper */
+#t2-wrapper {
+  position: absolute; bottom: 117px; left: 90px;
+  width: 18px; height: 12px;
+  background: #e8e060; border: 1.5px solid #b8b030; border-radius: 2px;
+  opacity: 0;
+  animation: t2-wrapper-anim 30s linear forwards; animation-play-state: paused;
+}
+@keyframes t2-wrapper-anim {
+  0%,42%  { opacity: 0; }
+  44%     { opacity: 1; }
+  50%     { opacity: 1; }
+  52%     { opacity: 0; }
+  100%    { opacity: 0; }
+}
+
+/* Leaf — larger and more vivid */
+#t2-leaf {
+  position: absolute; bottom: 118px; left: 220px;
+  width: 18px; height: 24px;
+  background: linear-gradient(135deg, #e87020, #c05010);
+  clip-path: polygon(50% 0%, 100% 55%, 85% 100%, 15% 100%, 0% 55%);
+  filter: drop-shadow(1px 2px 2px rgba(0,0,0,.3));
+  z-index: 5;
+  animation: t2-leaf-anim 30s linear forwards; animation-play-state: paused;
+}
+/* Leaf stem */
+#t2-leaf::after {
+  content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+  width: 2px; height: 7px; background: #6a3010;
+}
+@keyframes t2-leaf-anim {
+  0%, 59%  { left: 220px; bottom: 118px; opacity: 1; transform: rotate(0deg); }
+  59.5%    { left: 215px; bottom: 142px; opacity: 1; transform: rotate(-20deg); }
+  60.5%    { left: 490px; bottom: 130px; opacity: 1; transform: rotate(180deg); }
+  62%      { left: 510px; bottom: 105px; opacity: 0; }
+  100%     { opacity: 0; }
+}
+
+/* Clouds */
+#t2-cloud1 {
+  position: absolute; top: 35px; left: -110px; width: 90px; height: 28px;
+  background: #fff; border-radius: 40px; opacity: .85;
+  animation: t2-c1 30s linear forwards; animation-play-state: paused;
+}
+#t2-cloud1::before { content:''; position:absolute; width:48px; height:48px; background:#fff; border-radius:50%; top:-22px; left:12px; }
+#t2-cloud1::after  { content:''; position:absolute; width:36px; height:36px; background:#fff; border-radius:50%; top:-16px; left:44px; }
+#t2-cloud2 {
+  position: absolute; top: 60px; left: 300px; width: 70px; height: 22px;
+  background: #fff; border-radius: 40px; opacity: .7;
+  animation: t2-c2 40s linear forwards; animation-play-state: paused;
+}
+#t2-cloud2::before { content:''; position:absolute; width:36px; height:36px; background:#fff; border-radius:50%; top:-16px; left:8px; }
+@keyframes t2-c1 { 0%{left:-110px} 100%{left:750px} }
+@keyframes t2-c2 { 0%{left:300px}  100%{left:750px} }
+
+/* Bushes along back of path — the dog runs in front of these */
+.t2-bush {
+  position: absolute; bottom: 117px;
+}
+.bush-base {
+  width: 72px; height: 42px;
+  background: radial-gradient(ellipse at 48% 65%, #58b830 30%, #30880e 100%);
+  border-radius: 50% 50% 30% 30%;
+  border: 2.5px solid #1e6008;
+  box-shadow: inset -6px -4px 0 rgba(0,0,0,.15);
+}
+.bush-top-l {
+  position: absolute; top: -18px; left: 2px;
+  width: 48px; height: 36px;
+  background: radial-gradient(ellipse at 42% 60%, #68cc40 30%, #389018 100%);
+  border-radius: 50%;
+  border: 2.5px solid #1e6008;
+}
+.bush-top-r {
+  position: absolute; top: -14px; left: 24px;
+  width: 42px; height: 32px;
+  background: radial-gradient(ellipse at 44% 58%, #60c038 30%, #309010 100%);
+  border-radius: 50%;
+  border: 2.5px solid #1e6008;
+}
+/* Highlight */
+.bush-base::before {
+  content: ''; position: absolute; top: 6px; left: 12px;
+  width: 18px; height: 12px;
+  background: rgba(180,255,100,.3); border-radius: 50%;
+}
+#t2-bush1 { left: 200px; z-index: 1; }
+#t2-bush2 { left: 265px; z-index: 1; }
+#t2-bush3 { left: 305px; z-index: 1; }
+
+/* ══════════════════════════════════════════════════════
+   TRIAL 3 — EVENING KITCHEN
+   Event 1 @5s:  child turns on tap
+   Event 2 @25s: child opens book
+   Interval: 20 s
+══════════════════════════════════════════════════════ */
+
+/* Background wall — warm evening kitchen */
+#t3-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, #d4a870 0%, #c09050 45%, #a87840 45%, #906830 100%);
+}
+/* Wall tiles above counter — bright, cartoon-style square tiles */
+#t3-wall-tiles {
+  position: absolute; bottom: 144px; left: 0; right: 0; height: 128px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0, transparent 39px, #b8905c 39px, #b8905c 42px),
+    repeating-linear-gradient(0deg, transparent 0, transparent 39px, #b8905c 39px, #b8905c 42px);
+  background-color: #f2deb8;
+  border-top: 3px solid #c8a070;
+}
+/* Tile gloss */
+#t3-wall-tiles::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,.18) 0%, transparent 50%);
+}
+/* Shadow at wall/counter join */
+#t3-wall-tiles::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 10px;
+  background: linear-gradient(to top, rgba(0,0,0,.25), transparent);
+}
+
+/* Floor — warm chequered tiles */
+#t3-floor {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 85px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0, transparent 49px, rgba(0,0,0,.1) 49px, rgba(0,0,0,.1) 52px),
+    repeating-linear-gradient(0deg, transparent 0, transparent 41px, rgba(0,0,0,.08) 41px, rgba(0,0,0,.08) 44px);
+  background-color: #ddb870;
+  border-top: 3px solid #c0a040;
+}
+/* Floor perspective shadow */
+#t3-floor::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 14px;
+  background: linear-gradient(to bottom, rgba(0,0,0,.2), transparent);
+}
+
+/* Kitchen counter — full width except fridge area */
+#t3-counter {
+  position: absolute; bottom: 85px; left: 0; right: 130px; height: 59px;
+  background: #7a5030;
+  border-top: 3px solid #5a3818;
+  z-index: 2;
+}
+#t3-counter-top {
+  position: absolute; bottom: 144px; left: 0; right: 130px; height: 16px;
+  background: linear-gradient(to bottom, #e0c890, #c8a870);
+  border-top: 2px solid #f0d8a0;
+  border-bottom: 3px solid #9a7840;
+  z-index: 2;
+}
+/* Counter front panel lines */
+#t3-counter::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg,
+    transparent 0, transparent 99px,
+    rgba(0,0,0,.15) 99px, rgba(0,0,0,.15) 102px);
+}
+/* Cabinet doors on counter */
+#t3-counter::after {
+  content: ''; position: absolute; bottom: 6px; left: 10px; right: 10px; height: 36px;
+  border: 2px solid rgba(255,255,255,.15); border-radius: 2px;
+}
+
+/* Cupboards (wall-mounted) — bright cartoon style */
+#t3-cupboard1, #t3-cupboard2 {
+  position: absolute; bottom: 175px; height: 115px; width: 134px;
+  background: linear-gradient(to bottom, #e8c880, #c8a050);
+  border: 3px solid #a07830; border-radius: 6px;
+  box-shadow: 3px 5px 10px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.3);
+}
+#t3-cupboard1 { left: 5px; }
+#t3-cupboard2 { left: 150px; }
+.cup-door {
+  position: absolute; inset: 8px; background: #d4a858;
+  border: 2.5px solid #a07830; border-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+}
+/* Cup door handle */
+.cup-door::before {
+  content: ''; position: absolute; right: 9px; top: 50%;
+  transform: translateY(-50%);
+  width: 6px; height: 26px; background: linear-gradient(to right, #7a5028, #b07840, #7a5028);
+  border-radius: 4px; border: 1.5px solid #5a3810;
+}
+/* Cup door panel detail */
+.cup-door::after {
+  content: ''; position: absolute; inset: 9px;
+  border: 1.5px solid rgba(0,0,0,.18); border-radius: 2px;
+}
+
+/* Sink — big, shiny, clearly a kitchen sink */
+#t3-sink {
+  position: absolute; bottom: 144px; left: 280px;
+  width: 130px; height: 60px;
+  background: linear-gradient(to bottom, #e8e8e8, #c0c0c0);
+  border: 3.5px solid #909090; border-radius: 6px 6px 0 0;
+  box-shadow: inset 0 5px 12px rgba(0,0,0,.22), 3px 3px 8px rgba(0,0,0,.2);
+  overflow: visible;
+}
+/* Sink basin */
+#t3-sink::before {
+  content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 5px;
+  background: #b0b0b0; border-radius: 4px;
+  box-shadow: inset 0 4px 10px rgba(0,0,0,.28), inset 0 0 0 2px #909090;
+}
+/* Drain */
+#t3-sink::after {
+  content: ''; position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  width: 16px; height: 16px; background: #888;
+  border-radius: 50%; border: 2.5px solid #606060;
+  box-shadow: inset 0 0 5px rgba(0,0,0,.5);
+}
+/* Tap body (gooseneck) */
+#t3-tap {
+  position: absolute; bottom: 200px; left: 328px;
+  width: 8px; height: 30px;
+  background: linear-gradient(to right, #c8c8c8, #e8e8e8, #b8b8b8);
+  border-radius: 4px 4px 0 0;
+  box-shadow: 1px 0 3px rgba(0,0,0,.2);
+}
+/* Tap neck arch */
+#t3-tap::before {
+  content: ''; position: absolute; top: -6px; left: -12px;
+  width: 32px; height: 20px;
+  border-top: 8px solid #c8c8c8; border-radius: 50% 50% 0 0;
+  border-left: none; border-right: none;
+}
+/* Tap handle — cross shape, rotates 90° when tap turns on */
+#t3-tap-handle {
+  position: absolute; bottom: 224px; left: 308px;
+  width: 46px; height: 14px;
+  transform-origin: center center;
+  transition: transform 0.5s ease;
+}
+#t3-tap-handle.on {
+  transform: rotate(90deg);
+}
+.tap-h-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 100%;
+  background: linear-gradient(to right, #a0a0a0, #d8d8d8, #a0a0a0);
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0,0,0,.3);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+.tap-v-bar {
+  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+  width: 14px; height: 34px;
+  background: linear-gradient(to right, #a0a0a0, #d8d8d8, #a0a0a0);
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0,0,0,.3);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+/* When tap is ON: handle turns vivid red-orange with a glow */
+#t3-tap-handle.on .tap-h-bar,
+#t3-tap-handle.on .tap-v-bar {
+  background: linear-gradient(to right, #cc2200, #ff5500, #cc2200);
+  box-shadow: 0 0 10px 4px rgba(255,80,0,0.7), 0 2px 5px rgba(0,0,0,.3);
+}
+
+/* Water stream — wide, bright, clearly visible */
+#t3-water {
+  position: absolute; bottom: 178px; left: 324px;
+  width: 16px; height: 50px;
+  background: linear-gradient(to bottom,
+    rgba(80,180,255,1) 0%,
+    rgba(60,160,240,0.9) 50%,
+    rgba(40,140,220,0.6) 100%);
+  border-radius: 3px 3px 8px 8px; opacity: 0;
+  box-shadow: 0 0 6px 2px rgba(80,200,255,0.5);
+  animation: t3-water-anim 30s linear forwards; animation-play-state: paused;
+}
+@keyframes t3-water-anim {
+  0%,15%  { opacity: 0; height: 50px; }
+  17%     { opacity: 1; height: 54px; }
+  31%     { opacity: 1; height: 50px; }
+  33%     { opacity: 0; height: 46px; }
+  100%    { opacity: 0; }
+}
+/* Second water stream (offset) */
+#t3-water2 {
+  position: absolute; bottom: 178px; left: 336px;
+  width: 8px; height: 44px;
+  background: linear-gradient(to bottom,
+    rgba(120,210,255,0.9) 0%,
+    rgba(80,180,255,0.6) 60%,
+    rgba(60,160,240,0.2) 100%);
+  border-radius: 3px 3px 6px 6px; opacity: 0;
+  animation: t3-water2-anim 30s linear forwards; animation-play-state: paused;
+}
+@keyframes t3-water2-anim {
+  0%,16%  { opacity: 0; }
+  18.5%   { opacity: 1; }
+  30%     { opacity: 1; }
+  32%     { opacity: 0; }
+  100%    { opacity: 0; }
+}
+/* Water splash at basin */
+#t3-splash {
+  position: absolute; bottom: 174px; left: 325px;
+  width: 22px; height: 10px;
+  border: 2.5px solid rgba(80,180,255,.8); border-radius: 50%;
+  opacity: 0;
+  animation: t3-splash-anim 30s linear forwards; animation-play-state: paused;
+}
+@keyframes t3-splash-anim {
+  0%,15% { opacity: 0; }
+  17%,31% { opacity: .85; transform: scale(1); }
+  33% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* Fridge — bright white with rounded cartoon look */
+#t3-fridge {
+  position: absolute; bottom: 85px; right: 20px;
+  width: 112px; height: 228px;
+  background: linear-gradient(to right, #c8dcc8, #f0f8f0, #c8dcc8);
+  border: 3px solid #90b090; border-radius: 10px;
+  box-shadow: 5px 8px 20px rgba(0,0,0,.3), inset 1px 0 0 rgba(255,255,255,.6);
+  z-index: 3;
+}
+/* Fridge door */
+#t3-fridge-door {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #e4f0e4 0%, #f8faf8 48%, #dce8dc 100%);
+  border-radius: 10px; transform-origin: right center; transition: transform .6s ease;
+  border: 3px solid #90b090;
+}
+#t3-fridge.open #t3-fridge-door { transform: perspective(220px) rotateY(70deg); }
+/* Freezer / fridge dividing line */
+.fridge-line {
+  position: absolute; left: 6px; right: 6px; top: 90px; height: 4px;
+  background: linear-gradient(to bottom, #80a080, #a0c0a0);
+  border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+/* Handles — on the left (pull) side, opposite the right-side hinge */
+.fridge-handle {
+  position: absolute; left: 12px; width: 10px; height: 55px;
+  background: linear-gradient(to right, #707070, #c0c0c0, #707070);
+  border-radius: 5px; box-shadow: 2px 2px 4px rgba(0,0,0,.35);
+}
+.fridge-handle.top { top: 16px; }
+.fridge-handle.bot { top: 112px; }
+/* Fridge magnets */
+#t3-fridge-door::before {
+  content: ''; position: absolute; top: 112px; left: 18px;
+  width: 14px; height: 14px; background: radial-gradient(circle, #f04040, #b02020);
+  border-radius: 50%; border: 1.5px solid #802020;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+#t3-fridge-door::after {
+  content: ''; position: absolute; top: 112px; left: 38px;
+  width: 14px; height: 14px; background: radial-gradient(circle, #f0f040, #b0b010);
+  border-radius: 50%; border: 1.5px solid #909010;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+
+/* Bowl (taken from fridge) */
+#t3-bowl {
+  position: absolute; bottom: 160px; right: 50px;
+  width: 44px; height: 22px;
+  background: linear-gradient(to bottom, #f0dfc0, #d4b890);
+  border-radius: 0 0 22px 22px;
+  border: 2.5px solid #b4946a; opacity: 0;
+  box-shadow: 0 4px 8px rgba(0,0,0,.15);
+  animation: t3-bowl-anim 30s linear forwards; animation-play-state: paused;
+}
+/* Bowl rim highlight */
+#t3-bowl::before {
+  content: ''; position: absolute; top: -2px; left: -3px; right: -3px; height: 6px;
+  background: #e0c898; border-radius: 50%; border: 2px solid #b4946a;
+}
+@keyframes t3-bowl-anim {
+  0%,51%  { opacity: 0; right: 50px; bottom: 160px; }
+  53%     { opacity: 1; right: 50px; bottom: 160px; }
+  63%     { opacity: 1; right: 270px; bottom: 160px; }
+  100%    { opacity: 1; right: 270px; bottom: 160px; }
+}
+
+/* Towel hanging on counter edge */
+
+/* Dining table — clearly a table */
+#t3-table {
+  position: absolute; bottom: 85px; left: 20px;
+  width: 230px; height: 16px;
+  background: linear-gradient(to bottom, #6b4423, #4e3018);
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.35);
+  z-index: 3;
+  animation: t3-table-anim 30s linear forwards; animation-play-state: paused;
+}
+/* Table legs */
+#t3-table::before {
+  content: ''; position: absolute; bottom: -48px; left: 18px;
+  width: 14px; height: 48px;
+  background: linear-gradient(to right, #3a2010, #5a3018);
+  border-radius: 2px;
+}
+#t3-table::after {
+  content: ''; position: absolute; bottom: -48px; right: 18px;
+  width: 14px; height: 48px;
+  background: linear-gradient(to right, #3a2010, #5a3018);
+  border-radius: 2px;
+}
+/* Table surface highlight */
+.table-shine {
+  position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(to bottom, rgba(255,255,255,.3), transparent);
+  border-radius: 4px 4px 0 0;
+}
+@keyframes t3-table-anim {
+  0%    { opacity: 1; }
+  100%  { opacity: 1; }
+}
+
+/* Chair at table */
+#t3-chair {
+  position: absolute; bottom: 85px; left: 90px;
+  width: 48px; height: 60px;
+  z-index: 4;
+}
+.chair-seat {
+  position: absolute; bottom: 24px; left: 0; right: 0; height: 8px;
+  background: linear-gradient(to bottom, #9a7040, #7a5020);
+  border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,.25);
+  border-top: 2px solid #b8904a;
+}
+.chair-back {
+  position: absolute; bottom: 32px; left: 4px; right: 4px; height: 28px;
+  background: linear-gradient(to bottom, #9a7040, #7a5020);
+  border-radius: 3px 3px 0 0;
+  border-top: 2px solid #b8904a;
+  border-left: 2px solid #6a4010; border-right: 2px solid #6a4010;
+}
+.chair-back::before {
+  content: ''; position: absolute; top: 8px; left: 6px; right: 6px; height: 8px;
+  border: 1.5px solid #6a4010; border-radius: 2px;
+}
+.chair-leg-l, .chair-leg-r {
+  position: absolute; bottom: 0; width: 6px; height: 26px;
+  background: linear-gradient(to right, #c8a060, #a07830);
+  border-radius: 2px;
+  border: 1.5px solid #6a4010;
+}
+.chair-leg-l { left: 6px; transform: rotate(-4deg); transform-origin: top; }
+.chair-leg-r { right: 6px; transform: rotate(4deg); transform-origin: top; }
+
+
+#t3-book {
+  position: absolute; bottom: 101px; left: 60px;
+  width: 70px; height: 50px;
+  opacity: 1; z-index: 8;
+}
+/* Book shadow */
+#t3-book::before {
+  content: ''; position: absolute; bottom: -4px; left: 4px; right: -4px; height: 6px;
+  background: rgba(0,0,0,.2); border-radius: 50%; filter: blur(3px);
+}
+.book-cover {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #3a5a90, #2a4070);
+  border-radius: 3px 6px 6px 3px; border: 2px solid #1a2a50;
+  box-shadow: 2px 3px 8px rgba(0,0,0,.35);
+}
+/* Title lines on cover */
+.book-cover::before {
+  content: ''; position: absolute; top: 10px; left: 8px; right: 8px; height: 3px;
+  background: rgba(255,255,255,.4); border-radius: 2px;
+}
+.book-cover::after {
+  content: ''; position: absolute; top: 18px; left: 10px; right: 14px; height: 3px;
+  background: rgba(255,255,255,.25); border-radius: 2px;
+}
+.book-spine {
+  position: absolute; top: 0; left: 0; bottom: 0; width: 9px;
+  background: linear-gradient(to right, #1a2a50, #3050a0);
+  border-radius: 3px 0 0 3px;
+}
+/* Right page — starts flat open */
+.book-page {
+  position: absolute; top: 4px; right: 4px; bottom: 4px; left: 11px;
+  background: linear-gradient(to right, #f8f4ec, #eee8e0);
+  border-radius: 0 3px 3px 0;
+  transform-origin: left center; transition: transform 0.55s ease-in-out;
+  transform: perspective(120px) rotateY(0deg);
+}
+/* Page text lines */
+.book-page::before {
+  content: '';
+  position: absolute;
+  top: 6px; left: 5px; right: 4px; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px, transparent 6px,
+    rgba(0,0,0,.13) 6px, rgba(0,0,0,.13) 7px
+  );
+}
+/* Turned page — sweeps from right to left revealing the next page */
+#t3-book.page-turn .book-page {
+  animation: page-flip 0.55s ease-in-out forwards;
+}
+@keyframes page-flip {
+  0%   { transform: perspective(120px) rotateY(0deg); }
+  50%  { transform: perspective(120px) rotateY(-90deg); background: linear-gradient(to left, #f0ece4, #e8e4dc); }
+  100% { transform: perspective(120px) rotateY(-170deg); background: linear-gradient(to left, #f0ece4, #e8e4dc); }
+}
+/* New page visible behind — slightly different tone */
+.book-page-back {
+  position: absolute; top: 4px; right: 4px; bottom: 4px; left: 11px;
+  background: linear-gradient(to right, #f2ede3, #e8e2d8);
+  border-radius: 0 3px 3px 0;
+}
+.book-page-back::before {
+  content: '';
+  position: absolute;
+  top: 6px; left: 5px; right: 4px; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px, transparent 6px,
+    rgba(0,0,0,.10) 6px, rgba(0,0,0,.10) 7px
+  );
+}
+
+/* Window (evening glow) — warm sunset */
+#t3-window {
+  position: absolute; top: 20px; right: 148px;
+  width: 96px; height: 96px;
+  background: linear-gradient(160deg, #ffda70 0%, #f09030 45%, #c05810 100%);
+  border: 5px solid #8a6838; border-radius: 5px;
+  box-shadow: 0 0 28px 10px rgba(255,160,40,.4), inset 0 0 20px rgba(255,200,80,.3);
+  animation: t3-window-glow 3s ease-in-out infinite; animation-play-state: paused;
+}
+@keyframes t3-window-glow {
+  0%,100% { box-shadow: 0 0 28px 10px rgba(255,160,40,.4); }
+  50%     { box-shadow: 0 0 40px 16px rgba(255,180,60,.6); }
+}
+#t3-window::before { content:''; position: absolute; width: 3.5px; height: 100%; background: #8a6838; left: calc(50% - 1.5px); }
+#t3-window::after  { content:''; position: absolute; width: 100%; height: 3.5px; background: #8a6838; top: calc(50% - 1.5px); }
+
+/* Lamp */
+#t3-lamp {
+  position: absolute; top: 8px; left: 55px;
+  width: 28px; height: 50px;
+}
+.lamp-shade {
+  width: 28px; height: 0;
+  border-left: 14px solid transparent; border-right: 14px solid transparent;
+  border-top: 24px solid #e8c040;
+  filter: drop-shadow(0 2px 4px rgba(220,160,0,.4));
+}
+.lamp-pole  { width: 5px; height: 22px; background: #888; margin: 0 auto; }
+.lamp-base  { width: 16px; height: 5px; background: #888; border-radius: 3px; margin: 0 auto; }
+/* Glow */
+#t3-glow {
+  position: absolute; top: 0; left: 22px;
+  width: 200px; height: 140px;
+  background: radial-gradient(ellipse, rgba(255,220,80,.25) 0%, transparent 70%);
+  pointer-events: none;
+  animation: t3-glow-pulse 2s ease-in-out infinite; animation-play-state: paused;
+}
+@keyframes t3-glow-pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+/* ══════════════════════════════════════════════════════
+   CHARACTER — Alex v2  (TV cartoon quality)
+   80 × 150px SVG, 12 articulated joint groups.
+   Proper knee/elbow bends, shaped limb paths,
+   3-finger hands, brow expressions, squash/stretch.
+══════════════════════════════════════════════════════ */
+#char {
+  position: absolute; bottom: 117px; left: 50px;
+  width: 80px; height: 110px;
+  z-index: 10;
+}
+#char svg { overflow: visible; }
+
+/* ── All joint groups: smooth transitions when not animating ── */
+.aj {
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+}
+#char.walking .aj { transition: none; }
+
+/* ══ WALK CYCLE — 12 independent segment keyframes ══
+   Cycle: 0.52s linear infinite.
+   Thigh swings; shin lags 1/8 cycle behind with knee bend;
+   upper arm swings opposite phase to same-side thigh;
+   forearm lags behind upper arm.
+   Body bobs vertically + slight lateral tilt.
+   Head counter-tilts to body for follow-through. */
+
+/* ── THIGHS ── */
+@keyframes aw-thigl {
+  0%   { transform: rotate(-30deg); }
+  12%  { transform: rotate(-12deg); }
+  25%  { transform: rotate( 10deg); }
+  37%  { transform: rotate( 26deg); }
+  50%  { transform: rotate( 30deg); }
+  62%  { transform: rotate( 12deg); }
+  75%  { transform: rotate(-10deg); }
+  87%  { transform: rotate(-26deg); }
+  100% { transform: rotate(-30deg); }
+}
+@keyframes aw-thigr {
+  0%   { transform: rotate( 30deg); }
+  12%  { transform: rotate( 12deg); }
+  25%  { transform: rotate(-10deg); }
+  37%  { transform: rotate(-26deg); }
+  50%  { transform: rotate(-30deg); }
+  62%  { transform: rotate(-12deg); }
+  75%  { transform: rotate( 10deg); }
+  87%  { transform: rotate( 26deg); }
+  100% { transform: rotate( 30deg); }
+}
+/* ── SHINS (lag + knee-bend) ── */
+@keyframes aw-shinl {
+  0%   { transform: rotate( 10deg); }
+  12%  { transform: rotate(  4deg); }
+  25%  { transform: rotate( -8deg); }
+  37%  { transform: rotate(-28deg); }
+  50%  { transform: rotate(-38deg); }
+  62%  { transform: rotate(-20deg); }
+  75%  { transform: rotate( -4deg); }
+  87%  { transform: rotate(  8deg); }
+  100% { transform: rotate( 10deg); }
+}
+@keyframes aw-shinr {
+  0%   { transform: rotate(-38deg); }
+  12%  { transform: rotate(-20deg); }
+  25%  { transform: rotate( -4deg); }
+  37%  { transform: rotate(  8deg); }
+  50%  { transform: rotate( 10deg); }
+  62%  { transform: rotate(  4deg); }
+  75%  { transform: rotate( -8deg); }
+  87%  { transform: rotate(-28deg); }
+  100% { transform: rotate(-38deg); }
+}
+/* ── FEET (heel-strike tilt) ── */
+@keyframes aw-footl {
+  0%,87%,100% { transform: rotate(  0deg); }
+  37%         { transform: rotate(-14deg); }
+  50%         { transform: rotate(-18deg); }
+}
+@keyframes aw-footr {
+  0%   { transform: rotate(-18deg); }
+  12%  { transform: rotate(-14deg); }
+  37%,50%,100% { transform: rotate(  0deg); }
+  87%          { transform: rotate(-14deg); }
+}
+/* ── UPPER ARMS ── */
+@keyframes aw-uarml {
+  0%   { transform: rotate( 32deg); }
+  25%  { transform: rotate(-12deg); }
+  50%  { transform: rotate(-32deg); }
+  75%  { transform: rotate( 12deg); }
+  100% { transform: rotate( 32deg); }
+}
+@keyframes aw-uarmr {
+  0%   { transform: rotate(-32deg); }
+  25%  { transform: rotate( 12deg); }
+  50%  { transform: rotate( 32deg); }
+  75%  { transform: rotate(-12deg); }
+  100% { transform: rotate(-32deg); }
+}
+/* ── FOREARMS (lag behind upper arm) ── */
+@keyframes aw-farml {
+  0%   { transform: rotate(-16deg); }
+  25%  { transform: rotate(-36deg); }
+  50%  { transform: rotate(-12deg); }
+  75%  { transform: rotate(-28deg); }
+  100% { transform: rotate(-16deg); }
+}
+@keyframes aw-farmr {
+  0%   { transform: rotate(-12deg); }
+  25%  { transform: rotate(-28deg); }
+  50%  { transform: rotate(-16deg); }
+  75%  { transform: rotate(-36deg); }
+  100% { transform: rotate(-12deg); }
+}
+/* ── BODY BOB + LATERAL TILT ── */
+@keyframes aw-body {
+  0%,100% { transform: translateY(0px)  rotate(-1.5deg); }
+  25%     { transform: translateY(-4px) rotate( 0deg); }
+  50%     { transform: translateY(0px)  rotate( 1.5deg); }
+  75%     { transform: translateY(-4px) rotate( 0deg); }
+}
+/* ── HEAD COUNTER-TILT (follow-through) ── */
+@keyframes aw-head {
+  0%,100% { transform: rotate( 1.5deg); }
+  25%     { transform: rotate( 0deg); }
+  50%     { transform: rotate(-1.5deg); }
+  75%     { transform: rotate( 0deg); }
+}
+
+/* Apply walk keyframes via .walking class */
+#char.walking #aj-body   { animation: aw-body  .52s linear infinite; }
+#char.walking #aj-thigl  { animation: aw-thigl .52s linear infinite; }
+#char.walking #aj-thigr  { animation: aw-thigr .52s linear infinite; }
+#char.walking #aj-shinl  { animation: aw-shinl .52s linear infinite; }
+#char.walking #aj-shinr  { animation: aw-shinr .52s linear infinite; }
+#char.walking #aj-footl  { animation: aw-footl .52s linear infinite; }
+#char.walking #aj-footr  { animation: aw-footr .52s linear infinite; }
+#char.walking #aj-uarml  { animation: aw-uarml .52s linear infinite; }
+#char.walking #aj-uarmr  { animation: aw-uarmr .52s linear infinite; }
+#char.walking #aj-farml  { animation: aw-farml .52s linear infinite; }
+#char.walking #aj-farmr  { animation: aw-farmr .52s linear infinite; }
+#char.walking #aj-head   { animation: aw-head  .52s linear infinite; }
+
+/* ══ STATIC POSES ══ */
+
+/* STAND */
+#char.stand #aj-body  { transform: rotate(0deg); }
+#char.stand #aj-uarml { transform: rotate(-18deg); }
+#char.stand #aj-farml { transform: rotate(-10deg); }
+#char.stand #aj-uarmr { transform: rotate( 18deg); }
+#char.stand #aj-farmr { transform: rotate(-10deg); }
+#char.stand #aj-thigl { transform: rotate(0deg); }
+#char.stand #aj-shinl { transform: rotate(0deg); }
+#char.stand #aj-footl { transform: rotate(0deg); }
+#char.stand #aj-thigr { transform: rotate(0deg); }
+#char.stand #aj-shinr { transform: rotate(0deg); }
+#char.stand #aj-footr { transform: rotate(0deg); }
+
+/* BEND — body tilts forward, lead arm reaches down, knee flexes */
+#char.bend #aj-body  { transform: rotate(36deg);  transition: transform .75s cubic-bezier(.4,0,.2,1); }
+#char.bend #aj-head  { transform: translateY(6px) rotate(-28deg); transition: transform .75s cubic-bezier(.4,0,.2,1); }
+#char.bend #aj-uarml { transform: rotate(68deg);  transition: transform .75s cubic-bezier(.4,0,.2,1); }
+#char.bend #aj-farml { transform: rotate(30deg);  transition: transform .75s cubic-bezier(.4,0,.2,1); }
+#char.bend #aj-uarmr { transform: rotate(-10deg); transition: transform .75s cubic-bezier(.4,0,.2,1); }
+#char.bend #aj-farmr { transform: rotate(-8deg);  transition: transform .75s cubic-bezier(.4,0,.2,1); }
+#char.bend #aj-thigl { transform: rotate(-18deg); transition: transform .75s cubic-bezier(.4,0,.2,1); }
+#char.bend #aj-shinl { transform: rotate(-20deg); transition: transform .75s cubic-bezier(.4,0,.2,1); }
+#char.bend #aj-thigr { transform: rotate( 18deg); transition: transform .75s cubic-bezier(.4,0,.2,1); }
+#char.bend #aj-shinr { transform: rotate(-20deg); transition: transform .75s cubic-bezier(.4,0,.2,1); }
+
+/* SIT — thighs horizontal, shins drop down */
+#char.sit #aj-body  { transform: rotate(4deg);   transition: transform .5s ease-in-out; }
+#char.sit #aj-thigl { transform: rotate(82deg);  transition: transform .5s ease-in-out; }
+#char.sit #aj-shinl { transform: rotate(-76deg); transition: transform .5s ease-in-out; }
+#char.sit #aj-footl { transform: rotate(-6deg);  transition: transform .5s ease-in-out; }
+#char.sit #aj-thigr { transform: rotate(82deg);  transition: transform .5s ease-in-out; }
+#char.sit #aj-shinr { transform: rotate(-76deg); transition: transform .5s ease-in-out; }
+#char.sit #aj-footr { transform: rotate(-6deg);  transition: transform .5s ease-in-out; }
+#char.sit #aj-uarml { transform: rotate(14deg);  transition: transform .5s ease-in-out; }
+#char.sit #aj-uarmr { transform: rotate(-14deg); transition: transform .5s ease-in-out; }
+
+/* THROW — right arm raised with anticipation overshoot on release */
+#char.throw #aj-uarmr { transform: rotate(-95deg); transition: transform .55s cubic-bezier(.18,.89,.32,1.28); }
+#char.throw #aj-farmr { transform: rotate(-20deg); transition: transform .55s cubic-bezier(.18,.89,.32,1.28); }
+#char.throw #aj-uarml { transform: rotate( 14deg); transition: transform .4s ease-out; }
+#char.throw #aj-farml { transform: rotate(-10deg); transition: transform .4s ease-out; }
+#char.throw #aj-body  { transform: rotate(-6deg);  transition: transform .4s ease-out; }
+#char.throw #aj-thigl { transform: rotate( -6deg); }
+#char.throw #aj-thigr { transform: rotate(  6deg); }
+#char.throw #aj-shinl { transform: rotate(  4deg); }
+#char.throw #aj-shinr { transform: rotate( -4deg); }
+
+/* ── BLINK ── */
+@keyframes alex-blink {
+  0%,90%  { transform: scaleY(1); }
+  93%     { transform: scaleY(0.06); }
+  96%     { transform: scaleY(1); }
+  100%    { transform: scaleY(1); }
+}
+.alex-eye {
+  transform-origin: 50% 50%;
+  animation: alex-blink 3.8s ease-in-out infinite;
+}
+.alex-eye.eye-r { animation-delay: 0.07s; }
+
+/* ── BROW EXPRESSIONS ── */
+/* Brows are path elements; pose classes tilt them */
+#char.bend .alex-brow-l  { transform: rotate( 12deg); }
+#char.bend .alex-brow-r  { transform: rotate(-12deg); }
+#char.throw .alex-brow-l { transform: rotate(-8deg) translateY(-1px); }
+#char.throw .alex-brow-r { transform: rotate( 8deg) translateY(-1px); }
+.alex-brow-l { transform-origin: right center; transition: transform .35s ease; }
+.alex-brow-r { transform-origin: left  center; transition: transform .35s ease; }
+
+/* ── SMILE FLASH ── */
+@keyframes alex-smile-flash {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.alex-smile-big { opacity: 0; }
+#char.smile-flash .alex-smile-big {
+  animation: alex-smile-flash .9s ease forwards;
+}
+
+/* ── GROUND SHADOW ── */
+#char::after {
+  content: '';
+  position: absolute; bottom: -4px; left: 50%;
+  transform: translateX(-50%);
+  width: 54px; height: 12px;
+  background: radial-gradient(ellipse, rgba(0,0,0,.25) 30%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Freeze-frame character ── */
+.ff-stage .char { position:absolute; z-index:10; }
+.ff-stage .char svg { overflow: visible; }
+
+/* ── Scene upgrade: T1 house subtle parallax ── */
+@keyframes t1-house-parallax {
+  0%   { transform: translateX(0px); }
+  100% { transform: translateX(8px); }
+}
+#t1-house {
+  animation: t1-house-parallax 30s linear forwards;
+  animation-play-state: paused;
+}
+
+/* ── Scene upgrade: T2 butterfly ── */
+#t2-butterfly {
+  position: absolute; bottom: 160px; left: 350px;
+  width: 18px; height: 14px; pointer-events: none;
+  animation: t2-butterfly-path 30s linear forwards;
+  animation-play-state: paused;
+}
+#t2-butterfly::before, #t2-butterfly::after {
+  content: '';
+  position: absolute; top: 0; width: 10px; height: 14px;
+  background: radial-gradient(ellipse, #e860e0 30%, #c030c0 100%);
+  border-radius: 50% 50% 40% 40%;
+  border: 1.5px solid #801880;
+  animation: t2-butterfly-flap .25s ease-in-out infinite;
+  animation-play-state: paused;
+  transform-origin: right center;
+}
+#t2-butterfly.running::before, #t2-butterfly.running::after {
+  animation-play-state: running;
+}
+#t2-butterfly::before { left: 0; transform-origin: right center; }
+#t2-butterfly::after  { right: 0; transform-origin: left center;
+  animation-delay: .125s;
+  background: radial-gradient(ellipse, #e070e8 30%, #a028a8 100%);
+}
+@keyframes t2-butterfly-flap {
+  0%,100% { transform: scaleX(1) scaleY(1); }
+  50%     { transform: scaleX(0.2) scaleY(0.8); }
+}
+@keyframes t2-butterfly-path {
+  0%   { left: 350px; bottom: 160px; }
+  15%  { left: 310px; bottom: 178px; }
+  30%  { left: 280px; bottom: 165px; }
+  50%  { left: 240px; bottom: 185px; }
+  70%  { left: 210px; bottom: 168px; }
+  85%  { left: 190px; bottom: 180px; }
+  100% { left: 160px; bottom: 172px; }
+}
+
+/* ── Scene upgrade: T3 steam wisps above tap ── */
+#t3-steam1, #t3-steam2 {
+  position: absolute; left: 330px;
+  width: 6px; border-radius: 3px;
+  background: linear-gradient(to top, rgba(180,220,255,.7), transparent);
+  opacity: 0;
+  animation: t3-steam-anim 30s linear forwards;
+  animation-play-state: paused;
+}
+#t3-steam1 { bottom: 228px; height: 22px; animation-delay: 0s; }
+#t3-steam2 { bottom: 228px; height: 18px; left: 340px; animation-delay: .4s; }
+@keyframes t3-steam-anim {
+  0%,15%   { opacity: 0; }
+  17%,31%  { opacity: .8; transform: translateY(0); }
+  31.5%    { opacity: 0; transform: translateY(-18px); }
+  100%     { opacity: 0; }
+}
+
+/* ── Tree-top breeze (T2) ── */
+@keyframes t2-treetop-sway {
+  0%,100% { transform: rotate(0deg); }
+  40%     { transform: rotate(1.5deg); }
+  70%     { transform: rotate(-1deg); }
+}
+#t2-tree1 .tree-top, #t2-tree2 .tree-top {
+  animation: t2-treetop-sway 4s ease-in-out infinite;
+  animation-play-state: paused;
+  transform-origin: bottom center;
+}
+
+/* Event ring flash */
+.ev-ring {
+  position: absolute; border-radius: 50%;
+  border: 3px solid transparent; pointer-events: none;
+  z-index: 20;
+}
+.ev-ring.flash { animation: ring-flash .9s ease-out forwards; }
+@keyframes ring-flash {
+  0%   { border-color: rgba(255,210,40,.95); transform: scale(.7); }
+  60%  { border-color: rgba(255,210,40,.35); transform: scale(1.6); }
+  100% { border-color: transparent; transform: scale(2.2); }
+}
+#ev-ring1, #ev-ring2 { width: 64px; height: 64px; }
+
+/* ═══════════════════════════════════════
+   DISTRACTOR — 30-second timer
+═══════════════════════════════════════ */
+.math-display { font-size: 1.7rem; text-align: center; margin: 14px 0 6px; letter-spacing: .05em; }
+.math-input   { text-align: center; font-size: 1.3rem; width: 110px; margin: 0 auto; display: block; }
+.math-fb      { text-align: center; font-size: .95rem; min-height: 22px; margin-top: 5px; }
+.math-fb.ok   { color: var(--green); }
+.math-fb.err  { color: var(--red); }
+.q-count      { text-align: center; color: var(--muted); font-size: .88rem; margin-bottom: 4px; }
+
+.math-timer-wrap {
+  display: flex; flex-direction: column; align-items: center; margin-bottom: 12px;
+}
+.math-timer-ring {
+  width: 70px; height: 70px; position: relative;
+}
+.math-timer-ring svg { transform: rotate(-90deg); }
+.math-timer-ring circle {
+  fill: none; stroke: #ddd; stroke-width: 5;
+}
+.math-timer-ring .progress {
+  stroke: var(--accent); stroke-linecap: round;
+  stroke-dasharray: 188; stroke-dashoffset: 0;
+  transition: stroke-dashoffset .1s linear, stroke .5s;
+}
+.math-timer-ring .progress.urgent { stroke: var(--red); }
+#math-timer-text {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: bold; color: var(--text);
+}
+.math-score-line { font-size: .88rem; color: var(--muted); margin-top: 4px; }
+
+/* ═══════════════════════════════════════
+   RECALL — event cards
+═══════════════════════════════════════ */
+.recall-cards {
+  display: flex; gap: 16px; justify-content: center; margin: 12px 0;
+}
+.ev-card {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; cursor: default;
+}
+.ev-card-frame {
+  width: 180px; height: 120px;
+  border-radius: 10px; border: 3px solid var(--border);
+  background: #f8f8f8; overflow: hidden; position: relative;
+  box-shadow: 0 2px 10px rgba(0,0,0,.1);
+}
+.ev-card-frame.ev1-active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(61,107,158,.3); }
+.ev-card-frame.ev2-active { border-color: var(--green);  box-shadow: 0 0 0 3px rgba(74,124,89,.3); }
+.ev-card-caption {
+  font-size: .82rem; color: #444; text-align: center;
+  max-width: 180px; line-height: 1.4;
+}
+.ev-card-key {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: #e8e8e8; border: 1px solid #bbb;
+  border-bottom: 3px solid #999; border-radius: 6px;
+  font-size: 1.1rem; line-height: 1;
+}
+.ev-card-key.pressed-1 { background: var(--accent); color: #fff; border-color: var(--accent); border-bottom-color: #1a3a5c; }
+.ev-card-key.pressed-2 { background: var(--green);  color: #fff; border-color: var(--green); border-bottom-color: #1e4020; }
+
+/* ─────────────────────────────────────────────────────
+   FREEZE-FRAME PANELS
+   Each panel is a 600×400 stage clone scaled to 30%
+   (180×120 card).  We set transform-origin:top left so
+   coordinates stay identical to the live animation.
+───────────────────────────────────────────────────── */
+.ff-stage {
+  position: absolute;
+  top: 0; left: 0;
+  width: 600px; height: 400px;
+  transform: scale(0.3);
+  transform-origin: top left;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── Shared mini-Alex inside freeze-frame panels ──
+   Uses the same class names / structure as #char so the
+   character CSS rules below apply automatically.        */
+
+/* ── Class mirrors of all ID-based scene elements ──
+   Prefixed .p- so they can appear inside .ff-stage
+   without conflicting with the live IDs.               */
+
+/* T1 scene */
+.p-t1-sky    { position:absolute; inset:0; background:linear-gradient(to bottom,#3a9edb 0%,#6ec8f0 35%,#d8f0b8 35%,#a8d870 60%,#78c040 100%); }
+.p-t1-sun    { position:absolute; top:45px; right:75px; width:70px; height:70px; background:radial-gradient(circle,#fff176 30%,#ffe140 60%,#ffcc0088 100%); border-radius:50%; box-shadow:0 0 0 8px rgba(255,225,80,.35),0 0 0 18px rgba(255,225,80,.18),0 0 40px 20px rgba(255,200,50,.25); }
+.p-t1-cloud1 { position:absolute; top:28px; left:180px; width:100px; height:32px; background:#fff; border-radius:40px; opacity:.82; }
+.p-t1-cloud1::before { content:''; position:absolute; width:54px; height:54px; background:#fff; border-radius:50%; top:-24px; left:14px; }
+.p-t1-cloud1::after  { content:''; position:absolute; width:40px; height:40px; background:#fff; border-radius:50%; top:-18px; left:52px; }
+.p-t1-cloud2 { position:absolute; top:55px; left:480px; width:76px; height:24px; background:#fff; border-radius:40px; opacity:.68; }
+.p-t1-cloud2::before { content:''; position:absolute; width:38px; height:38px; background:#fff; border-radius:50%; top:-16px; left:10px; }
+.p-t1-bird   { position:absolute; top:78px; left:65px; width:16px; height:10px; }
+.p-t1-bird::before { content:''; position:absolute; border-top:3px solid #443; border-radius:50% 50% 0 0; width:10px; height:7px; left:0; top:0; }
+.p-t1-bird::after  { content:''; position:absolute; border-top:3px solid #443; border-radius:50% 50% 0 0; width:8px; height:6px; left:8px; top:1px; }
+.p-t1-road   { position:absolute; left:0; right:0; bottom:0; height:110px; background:linear-gradient(to bottom,#7a7a8a 0%,#58586a 100%); }
+.p-t1-road::before { content:''; position:absolute; top:50%; left:0; right:0; height:8px; background:repeating-linear-gradient(90deg,#f0e050 0,#f0e050 48px,transparent 48px,transparent 80px); transform:translateY(-50%); }
+.p-t1-road::after  { content:''; position:absolute; top:0; left:0; right:0; height:6px; background:linear-gradient(to bottom,#d8d0c0,#b0a898); border-bottom:2px solid #909080; }
+.p-t1-pavement { position:absolute; left:0; right:0; bottom:110px; height:30px; background:linear-gradient(to bottom,#e8decc,#d4c8b0); border-top:3px solid #c8be9a; }
+.p-t1-tree2 { position:absolute; bottom:140px; left:255px; }
+.p-t1-house { position:absolute; right:20px; bottom:140px; width:220px; height:200px; }
+.p-t1-postbox { position:absolute; left:195px; bottom:140px; width:28px; height:48px; background:linear-gradient(to right,#e02020 0%,#c81818 60%,#a81010 100%); border-radius:12px 12px 3px 3px; border:2px solid #901818; }
+.p-t1-gate  { position:absolute; left:-10px; bottom:140px; width:90px; height:120px; }
+.p-t1-gate.open .gate-panel { transform:perspective(200px) rotateY(-75deg); }
+.p-t1-backpack { position:absolute; left:345px; bottom:140px; width:34px; height:40px; z-index:5; }
+.p-t1-backpack::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,#5080c0 0%,#3a60a0 60%,#2a4880 100%); border:2.5px solid #2a4880; border-radius:5px; }
+.p-t1-backpack::after  { content:''; position:absolute; bottom:4px; left:4px; right:4px; height:14px; background:#3a60a0; border:1.5px solid #2a4880; border-radius:3px; }
+.p-t1-stone { position:absolute; bottom:143px; left:185px; width:12px; height:10px; background:#aaa; border-radius:50%; }
+
+/* T2 scene */
+.p-t2-sky    { position:absolute; inset:0; background:linear-gradient(to bottom,#2090d8 0%,#50b8f0 32%,#70cc48 42%,#48a828 100%); }
+.p-t2-path   { position:absolute; bottom:85px; left:0; right:0; height:32px; background:repeating-linear-gradient(90deg,#e0d098 0,#e0d098 32px,#d0c078 32px,#d0c078 64px); border-top:3.5px solid #c0a848; border-bottom:2.5px solid #a89030; }
+.p-t2-grass  { position:absolute; bottom:0; left:0; right:0; height:85px; background:linear-gradient(to bottom,#7cd860 0%,#50b038 60%,#389028 100%); border-top:3px solid #60c040; }
+.p-t2-pond   { position:absolute; right:30px; bottom:86px; width:190px; height:85px; background:radial-gradient(ellipse at 35% 40%,#b0e8ff 0%,#3aa8e8 45%,#1868b0 100%); border-radius:55% 45% 50% 50%; border:3.5px solid #1058a0; }
+.p-t2-bench  { position:absolute; left:35px; bottom:117px; width:120px; height:70px; }
+.p-t2-duck   { position:absolute; right:90px; bottom:128px; width:28px; height:18px; }
+.p-t2-duck::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse,#f8e840 55%,#d8c010 100%); border-radius:55% 45% 40% 60%; border:2px solid #b8a010; }
+.p-t2-duck::after  { content:''; position:absolute; top:-9px; right:-4px; width:15px; height:15px; background:radial-gradient(circle,#50a840 50%,#208020 100%); border-radius:50%; border:2px solid #106010; box-shadow:5px 4px 0 #e87010; }
+.p-t2-leaf   { position:absolute; bottom:118px; left:220px; width:18px; height:24px; background:linear-gradient(135deg,#e87020,#c05010); clip-path:polygon(50% 0%,100% 55%,85% 100%,15% 100%,0% 55%); z-index:5; }
+.p-t2-leaf.thrown { left:320px; bottom:140px; transform:rotate(-30deg); }
+.p-t2-tree1  { position:absolute; bottom:117px; left:195px; z-index:2; }
+.p-t2-tree2  { position:absolute; bottom:117px; right:220px; z-index:2; }
+/* Bushes */
+.p-t2-bush   { position:absolute; bottom:117px; }
+.p-t2-bush1  { left:200px; z-index:1; }
+.p-t2-bush2  { left:265px; z-index:1; }
+.p-t2-bush3  { left:305px; z-index:1; }
+/* Foreground grass strip */
+.p-t2-grass-f { position:absolute; bottom:0; left:0; right:0; height:85px; background:linear-gradient(to bottom,#7cd860 0%,#50b038 60%,#389028 100%); border-top:3px solid #60c040; }
+/* Dog — static snapshot at its start position (left edge of scene, barely visible) */
+.p-t2-dog    { position:absolute; bottom:117px; left:20px; z-index:6; }
+
+/* T3 — cupboard open state for decoy */
+.p-t3-cupboard1.open .cup-door { transform: perspective(200px) rotateY(-70deg); transform-origin: left center; }
+
+/* T3 scene */
+.p-t3-bg     { position:absolute; inset:0; background:linear-gradient(to bottom,#d4a870 0%,#c09050 45%,#a87840 45%,#906830 100%); }
+.p-t3-tiles  { position:absolute; bottom:144px; left:0; right:0; height:128px; background:repeating-linear-gradient(90deg,transparent 0,transparent 39px,#b8905c 39px,#b8905c 42px),repeating-linear-gradient(0deg,transparent 0,transparent 39px,#b8905c 39px,#b8905c 42px); background-color:#f2deb8; border-top:3px solid #c8a070; }
+.p-t3-floor  { position:absolute; bottom:0; left:0; right:0; height:85px; background:repeating-linear-gradient(90deg,transparent 0,transparent 49px,rgba(0,0,0,.1) 49px,rgba(0,0,0,.1) 52px),repeating-linear-gradient(0deg,transparent 0,transparent 41px,rgba(0,0,0,.08) 41px,rgba(0,0,0,.08) 44px); background-color:#ddb870; border-top:3px solid #c0a040; }
+.p-t3-counter { position:absolute; bottom:85px; left:0; right:130px; height:59px; background:#7a5030; border-top:3px solid #5a3818; z-index:2; }
+.p-t3-counter-top { position:absolute; bottom:144px; left:0; right:130px; height:16px; background:linear-gradient(to bottom,#e0c890,#c8a870); border-top:2px solid #f0d8a0; border-bottom:3px solid #9a7840; z-index:2; }
+.p-t3-cupboard1 { position:absolute; bottom:175px; height:115px; width:134px; left:5px; background:linear-gradient(to bottom,#e8c880,#c8a050); border:3px solid #a07830; border-radius:6px; }
+.p-t3-cupboard2 { position:absolute; bottom:175px; height:115px; width:134px; left:150px; background:linear-gradient(to bottom,#e8c880,#c8a050); border:3px solid #a07830; border-radius:6px; }
+.p-t3-sink   { position:absolute; bottom:144px; left:280px; width:130px; height:60px; background:linear-gradient(to bottom,#e8e8e8,#c0c0c0); border:3.5px solid #909090; border-radius:6px 6px 0 0; }
+.p-t3-tap    { position:absolute; bottom:200px; left:328px; width:8px; height:30px; background:linear-gradient(to right,#c8c8c8,#e8e8e8,#b8b8b8); border-radius:4px 4px 0 0; }
+.p-t3-tap::before { content:''; position:absolute; top:-6px; left:-12px; width:32px; height:20px; border-top:8px solid #c8c8c8; border-radius:50% 50% 0 0; }
+.p-t3-tap-handle { position:absolute; bottom:224px; left:308px; width:46px; height:14px; transform-origin:center center; }
+.p-t3-tap-handle.on { transform:rotate(90deg); }
+.p-t3-water  { position:absolute; bottom:178px; left:324px; width:16px; height:50px; background:linear-gradient(to bottom,rgba(80,180,255,1) 0%,rgba(60,160,240,.9) 50%,rgba(40,140,220,.6) 100%); border-radius:3px 3px 8px 8px; opacity:1; }
+.p-t3-fridge { position:absolute; bottom:85px; right:20px; width:112px; height:228px; background:linear-gradient(to right,#c8dcc8,#f0f8f0,#c8dcc8); border:3px solid #90b090; border-radius:10px; z-index:3; }
+.p-t3-fridge.open .p-t3-fridge-door { transform:perspective(220px) rotateY(70deg); }
+.p-t3-fridge-door { position:absolute; inset:0; background:linear-gradient(135deg,#e4f0e4 0%,#f8faf8 48%,#dce8dc 100%); border-radius:10px; transform-origin:right center; border:3px solid #90b090; }
+.p-t3-window { position:absolute; top:20px; right:148px; width:96px; height:96px; background:linear-gradient(160deg,#ffda70 0%,#f09030 45%,#c05810 100%); border:5px solid #8a6838; border-radius:5px; }
+.p-t3-window::before { content:''; position:absolute; width:3.5px; height:100%; background:#8a6838; left:calc(50% - 1.5px); }
+.p-t3-window::after  { content:''; position:absolute; width:100%; height:3.5px; background:#8a6838; top:calc(50% - 1.5px); }
+.p-t3-table  { position:absolute; bottom:85px; left:20px; width:230px; height:16px; background:linear-gradient(to bottom,#6b4423,#4e3018); border-radius:4px; box-shadow:0 4px 10px rgba(0,0,0,.35); z-index:3; }
+.p-t3-table::before { content:''; position:absolute; bottom:-48px; left:18px; width:14px; height:48px; background:linear-gradient(to right,#3a2010,#5a3018); border-radius:2px; }
+.p-t3-table::after  { content:''; position:absolute; bottom:-48px; right:18px; width:14px; height:48px; background:linear-gradient(to right,#3a2010,#5a3018); border-radius:2px; }
+.p-t3-chair  { position:absolute; bottom:85px; left:90px; width:48px; height:60px; z-index:4; }
+.p-t3-book   { position:absolute; bottom:101px; left:60px; width:70px; height:50px; z-index:8; }
+.p-t3-book-page { position:absolute; top:4px; right:4px; bottom:4px; left:11px; background:linear-gradient(to right,#f8f4ec,#eee8e0); border-radius:0 3px 3px 0; transform-origin:left center; }
+.p-t3-book.page-turn .p-t3-book-page { transform:perspective(120px) rotateY(-170deg); background:linear-gradient(to left,#f0ece4,#e8e4dc); }
+
+/* ── Suppress all CSS animations inside freeze-frame panels ── */
+.ff-stage * { animation:none !important; transition:none !important; }
+
+/* ═══════════════════════════════════════
+   RECALL
+═══════════════════════════════════════ */
+#recall-status {
+  font-size: .98rem; text-align: center; padding: 10px 18px;
+  border-radius: 8px; background: #eef3fa; color: var(--accent); min-height: 40px; width: 100%;
+}
+.kbd {
+  display: inline-block; background: #e8e8e8;
+  border: 1px solid #bbb; border-bottom: 3px solid #999;
+  border-radius: 4px; padding: 2px 12px; font-family: monospace; font-size: .88rem;
+}
+
+/* ═══════════════════════════════════════
+   RESULTS
+═══════════════════════════════════════ */
+#results-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+#results-table th, #results-table td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+#results-table th { background: #f0f0f0; font-weight: bold; }
+#results-table tr:nth-child(even) { background: #fafafa; }
+
+/* Distraction check screen */
+.distraction-btns { margin-top: 12px; }
+.distraction-opt  { min-width: 100px; font-size: 1.05rem; padding: 10px 28px; }
+.distraction-opt.selected-yes { background: var(--green)  !important; border-color: var(--green)  !important; color: #fff !important; }
+.distraction-opt.selected-no  { background: var(--red)    !important; border-color: var(--red)    !important; color: #fff !important; }
+
+.score-block { text-align: center; margin: 10px 0; }
+.big-score { font-size: 1.6rem; font-weight: bold; }
+.acc-good  { color: var(--green); }
+.acc-ok    { color: var(--accent2); }
+.acc-poor  { color: var(--red); }
+
+/* Passcode overlay */
+#pc-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center; z-index: 100;
+}
+#pc-overlay.show { display: flex; }
+.pc-box {
+  background: #fff; border-radius: var(--r); padding: 30px 38px;
+  width: 320px; box-shadow: var(--sh); display: flex; flex-direction: column; gap: 12px;
+}
+#pc-error { color: var(--red); font-size: .88rem; min-height: 18px; }
+
+@media (max-width: 680px) {
+  #anim-stage, #anim-wrap, #anim-progress-bar { width: 100%; }
+  #anim-stage { height: 220px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════
+     S0 — WELCOME
+════════════════════════════════════ -->
+<section id="s-welcome" class="screen active">
+  <div class="card">
+    <h1>BTED</h1>
+    <p>Welcome. In this session you will watch three short animated clips and complete a brief task after each one.</p>
+    <p>Please follow the instructions on each screen. Try to watch each clip carefully.</p>
+    <p class="muted">This session takes approximately 8–10 minutes.</p>
+    <hr>
+    <label for="pid-input">Participant ID</label>
+    <input type="text" id="pid-input" placeholder="e.g. P001" autocomplete="off" maxlength="24">
+    <div class="spacer"></div>
+    <p class="muted" style="font-size:.82rem;">Use the ID provided by your researcher. Do not enter personal information.</p>
+  </div>
+  <button class="btn" onclick="startStudy()">Begin &rarr;</button>
+</section>
+
+<!-- ════════════════════════════════════
+     S1 — VIDEO INTRO (per trial)
+════════════════════════════════════ -->
+<section id="s-video-intro" class="screen">
+  <div class="card">
+    <div class="trial-badge" id="trial-badge">Clip 1 of 3</div>
+    <h2>Watch the clip</h2>
+    <p>You are about to watch a short animated clip. Please watch it carefully — pay attention to <strong>what Alex does and in what order</strong>.</p>
+    <p>Afterwards you will be asked to replay the clip in your mind and identify key moments.</p>
+  </div>
+  <button class="btn" id="play-btn" onclick="startVideo()">Play clip &rarr;</button>
+</section>
+
+<!-- ════════════════════════════════════
+     S2 — ANIMATION
+════════════════════════════════════ -->
+<section id="s-video" class="screen">
+  <div id="anim-wrap">
+    <div id="anim-stage">
+
+      <!-- ── TRIAL 1 LAYER ── -->
+      <div id="t1-layer" class="trial-layer">
+        <div id="t1-sky"></div>
+        <div id="t1-sun"></div>
+        <div id="t1-cloud1"></div>
+        <div id="t1-cloud2"></div>
+        <div id="t1-tree2"><div class="tree-trunk"></div><div class="tree-top"></div></div>
+        <div id="t1-road"></div>
+        <div id="t1-pavement"></div>
+        <div id="t1-house">
+          <div class="h-roof"></div>
+          <div class="h-chimney"><div class="chimney-smoke"></div></div>
+          <div class="h-wall">
+            <div class="h-window"></div>
+            <div class="h-window-sill"></div>
+            <div class="h-num">12</div>
+            <div class="h-door-frame" id="t1-door-frame"></div>
+            <div class="h-door" id="t1-door">
+              <div class="h-door-panel"></div>
+              <div class="h-door-slot"></div>
+              <div class="h-knob"></div>
+            </div>
+          </div>
+        </div>
+        <div id="t1-postbox"></div>
+        <div id="t1-gate">
+          <div class="gate-arch"><span>SCHOOL</span></div>
+          <div class="gate-pillar l"></div>
+          <div class="gate-pillar r"></div>
+          <div class="gate-panel">
+            <div class="gate-rail"></div>
+            <div class="gate-rail"></div>
+            <div class="gate-rail"></div>
+            <div class="gate-rail"></div>
+            <div class="gate-h top"></div>
+            <div class="gate-h bot"></div>
+          </div>
+        </div>
+        <div id="t1-backpack">
+          <div class="bp-strap-l"></div>
+          <div class="bp-strap-r"></div>
+        </div>
+        <div id="t1-stone"></div>
+        <div id="t1-bird"></div>
+      </div>
+
+      <!-- ── TRIAL 2 LAYER ── -->
+      <div id="t2-layer" class="trial-layer" style="display:none">
+        <div id="t2-sky"></div>
+        <div id="t2-cloud1"></div>
+        <div id="t2-cloud2"></div>
+        <div id="t2-bush1" class="t2-bush"><div class="bush-base"></div><div class="bush-top-l"></div><div class="bush-top-r"></div></div>
+        <div id="t2-bush2" class="t2-bush"><div class="bush-base"></div><div class="bush-top-l"></div><div class="bush-top-r"></div></div>
+        <div id="t2-bush3" class="t2-bush"><div class="bush-base"></div><div class="bush-top-l"></div><div class="bush-top-r"></div></div>
+        <div id="t2-tree1"><div class="tree-trunk"></div><div class="tree-top"></div></div>
+        <div id="t2-tree2"><div class="tree-trunk"></div><div class="tree-top"></div></div>
+        <div id="t2-path"></div>
+        <div id="t2-grass-f"></div>
+        <div id="t2-pond"></div>
+        <div id="t2-duck"></div>
+        <div id="t2-ripple"></div>
+        <div id="t2-ripple2"></div>
+        <div id="t2-bench">
+          <div class="bench-seat"></div>
+          <div class="bench-leg-l"></div>
+          <div class="bench-leg-r"></div>
+        </div>
+        <div id="t2-dog">
+          <div class="dog-body">
+            <div class="dog-tail"></div>
+            <div class="dog-head">
+              <div class="dog-ear"></div>
+              <div class="dog-snout"></div>
+            </div>
+            <div class="dog-leg fl"></div><div class="dog-leg fr"></div>
+            <div class="dog-leg rl"></div><div class="dog-leg rr"></div>
+          </div>
+        </div>
+        <div id="t2-wrapper"></div>
+        <div id="t2-leaf"></div>
+        <div id="t2-butterfly"></div>
+      </div>
+
+      <!-- ── TRIAL 3 LAYER ── -->
+      <div id="t3-layer" class="trial-layer" style="display:none">
+        <div id="t3-bg"></div>
+        <div id="t3-wall-tiles"></div>
+        <div id="t3-window"></div>
+        <div id="t3-lamp">
+          <div class="lamp-shade"></div>
+          <div class="lamp-pole"></div>
+          <div class="lamp-base"></div>
+        </div>
+        <div id="t3-glow"></div>
+        <div id="t3-cupboard1"><div class="cup-door"></div></div>
+        <div id="t3-cupboard2"><div class="cup-door"></div></div>
+        <div id="t3-fridge">
+          <div id="t3-fridge-door">
+            <div class="fridge-line"></div>
+            <div class="fridge-handle top"></div>
+            <div class="fridge-handle bot"></div>
+          </div>
+        </div>
+        <div id="t3-sink"></div>
+        <div id="t3-tap"></div>
+        <div id="t3-tap-handle"><div class="tap-h-bar"></div><div class="tap-v-bar"></div></div>
+        <div id="t3-water"></div>
+        <div id="t3-water2"></div>
+        <div id="t3-steam1"></div>
+        <div id="t3-steam2"></div>
+         <div id="t3-splash"></div>
+         <div id="t3-counter-top"></div>
+        <div id="t3-counter"></div>
+        <div id="t3-floor"></div>
+        <div id="t3-table"><div class="table-shine"></div></div>
+        <div id="t3-chair">
+          <div class="chair-back"></div>
+          <div class="chair-seat"></div>
+          <div class="chair-leg-l"></div>
+          <div class="chair-leg-r"></div>
+        </div>
+        <div id="t3-bowl"></div>
+        <div id="t3-book">
+          <div class="book-cover"></div>
+          <div class="book-spine"></div>
+          <div class="book-page-back"></div>
+          <div class="book-page"></div>
+        </div>
+      </div>
+
+      <!-- ── CHARACTER (shared) — inline SVG Alex ── -->
+      <div id="char">
+        <!-- Alex v2: 12-segment TV cartoon character, 80×150 viewBox -->
+        <svg id="alex-svg" viewBox="0 0 80 150" width="80" height="110"
+             xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ag-shirt" x1="0%" y1="0%" x2="60%" y2="100%">
+              <stop offset="0%" stop-color="#f04040"/>
+              <stop offset="100%" stop-color="#b81818"/>
+            </linearGradient>
+            <linearGradient id="ag-trouser" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#4060c0"/>
+              <stop offset="100%" stop-color="#1c3888"/>
+            </linearGradient>
+            <linearGradient id="ag-shoe" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#1a1a2e"/>
+              <stop offset="100%" stop-color="#2e2e50"/>
+            </linearGradient>
+            <linearGradient id="ag-skin" x1="20%" y1="0%" x2="80%" y2="100%">
+              <stop offset="0%" stop-color="#fdd5a0"/>
+              <stop offset="100%" stop-color="#f0b870"/>
+            </linearGradient>
+            <linearGradient id="ag-hair" x1="0%" y1="0%" x2="50%" y2="100%">
+              <stop offset="0%" stop-color="#4a2808"/>
+              <stop offset="100%" stop-color="#2a1204"/>
+            </linearGradient>
+          </defs>
+
+          <!-- ══ RIGHT LEG (back, drawn first) ══ -->
+          <!-- Right thigh — pivots at hip R (50, 97) -->
+          <g id="aj-thigr" class="aj" style="transform-origin:50px 97px">
+            <!-- thigh shape: tapered rect -->
+            <path d="M44,97 C43,97 41,104 41,114 C41,117 43,119 46,119
+                     C49,119 51,117 51,114 C51,104 50,97 50,97 Z"
+                  fill="url(#ag-trouser)" stroke="#101840" stroke-width="2.5"/>
+             <!-- Right shin — pivots at knee (46, 116) -->
+             <g id="aj-shinr" class="aj" style="transform-origin:46px 116px">
+               <path d="M39,114 C38,114 37,120 37,131 C37,136 40,138 46,138
+                        C52,138 55,136 55,131 C55,120 54,114 53,114 Z"
+                     fill="url(#ag-trouser)" stroke="#101840" stroke-width="2.5"/>
+              <!-- Right foot — pivots at ankle (46, 135) -->
+              <g id="aj-footr" class="aj" style="transform-origin:46px 135px">
+                <path d="M36,135 C35,135 34,137 34,141 C34,144 36,150 40,150
+                         C46,150 58,149 60,147 C62,145 60,141 58,139
+                         C54,137 48,135 46,135 Z"
+                      fill="url(#ag-shoe)" stroke="#0a0a18" stroke-width="2"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- ══ LEFT LEG (front) ══ -->
+          <!-- Left thigh — pivots at hip L (30, 97) -->
+          <g id="aj-thigl" class="aj" style="transform-origin:30px 97px">
+            <path d="M24,97 C23,97 21,104 21,114 C21,117 23,119 26,119
+                     C29,119 31,117 32,114 C33,104 31,97 30,97 Z"
+                  fill="url(#ag-trouser)" stroke="#101840" stroke-width="2.5"/>
+             <!-- Left shin — pivots at knee (26, 116) -->
+             <g id="aj-shinl" class="aj" style="transform-origin:26px 116px">
+               <path d="M19,114 C18,114 17,120 17,131 C17,136 20,138 26,138
+                        C32,138 35,136 35,131 C35,120 34,114 33,114 Z"
+                     fill="url(#ag-trouser)" stroke="#101840" stroke-width="2.5"/>
+              <!-- Left foot — pivots at ankle (26, 135) -->
+              <g id="aj-footl" class="aj" style="transform-origin:26px 135px">
+                <path d="M16,135 C14,135 12,137 12,141 C12,144 14,150 18,150
+                         C24,150 38,149 40,147 C42,145 40,141 38,139
+                         C34,137 28,135 26,135 Z"
+                      fill="url(#ag-shoe)" stroke="#0a0a18" stroke-width="2"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- ══ BODY (torso) — pivots at centre (40, 75) ══ -->
+          <g id="aj-body" class="aj" style="transform-origin:40px 75px">
+
+            <!-- ── RIGHT ARM (back arm, behind body) ── -->
+            <!-- Right upper arm — pivots at shoulder R (57, 60) -->
+            <g id="aj-uarmr" class="aj" style="transform-origin:57px 60px">
+              <path d="M53,58 C52,58 50,63 50,71 C50,74 52,76 55,76
+                       C58,76 60,74 61,71 C62,65 61,58 57,58 Z"
+                    fill="url(#ag-shirt)" stroke="#901010" stroke-width="2.5"/>
+               <!-- Right forearm — pivots at elbow (55, 74) -->
+               <g id="aj-farmr" class="aj" style="transform-origin:55px 74px">
+                 <path d="M47,72 C46,72 45,78 45,87 C45,91 48,93 53,93
+                          C58,93 61,91 61,87 C61,80 60,72 55,72 Z"
+                       fill="url(#ag-skin)" stroke="#c87830" stroke-width="2"/>
+                <!-- Right hand — simple mitten -->
+                <ellipse cx="49" cy="91" rx="9" ry="6"
+                         fill="url(#ag-skin)" stroke="#c87830" stroke-width="1.5"/>
+                <line x1="49" y1="85" x2="49" y2="97"
+                      stroke="#c87830" stroke-width="1" opacity="0.4"
+                      stroke-linecap="round"/>
+              </g>
+            </g>
+
+            <!-- ── TORSO SHAPE ── -->
+            <!-- Waistband -->
+            <rect x="20" y="90" width="40" height="8" rx="3"
+                  fill="#1c3888" stroke="#101840" stroke-width="1.5"/>
+            <!-- Shirt body -->
+            <path d="M18,58 C15,60 14,66 14,75 C14,83 16,90 20,92
+                     L60,92 C64,90 66,83 66,75 C66,66 65,60 62,58
+                     C58,55 50,53 40,53 C30,53 22,55 18,58 Z"
+                  fill="url(#ag-shirt)" stroke="#901010" stroke-width="3"/>
+            <!-- Shirt stripe -->
+            <path d="M16,72 Q40,74 64,72 Q64,77 64,77 Q40,79 16,77 Z"
+                  fill="#b81818" opacity=".9"/>
+            <!-- Collar -->
+            <ellipse cx="40" cy="54" rx="11" ry="5"
+                     fill="#d82828" stroke="#901010" stroke-width="2"/>
+
+            <!-- ── LEFT ARM (front arm) ── -->
+            <!-- Left upper arm — pivots at shoulder L (23, 60) -->
+            <g id="aj-uarml" class="aj" style="transform-origin:23px 60px">
+              <path d="M19,58 C18,58 16,63 16,71 C16,74 18,76 21,76
+                       C24,76 26,74 27,71 C28,65 27,58 23,58 Z"
+                    fill="url(#ag-shirt)" stroke="#901010" stroke-width="2.5"/>
+              <!-- Left forearm — pivots at elbow (21, 74) -->
+              <g id="aj-farml" class="aj" style="transform-origin:21px 74px">
+                <path d="M13,72 C12,72 11,78 11,87 C11,91 14,93 19,93
+                         C24,93 27,91 27,87 C27,80 26,72 21,72 Z"
+                      fill="url(#ag-skin)" stroke="#c87830" stroke-width="2"/>
+                <!-- Left hand — simple mitten -->
+                <ellipse cx="15" cy="91" rx="9" ry="6"
+                         fill="url(#ag-skin)" stroke="#c87830" stroke-width="1.5"/>
+                <line x1="15" y1="85" x2="15" y2="97"
+                      stroke="#c87830" stroke-width="1" opacity="0.4"
+                      stroke-linecap="round"/>
+              </g>
+            </g>
+
+          </g><!-- end #aj-body -->
+
+          <!-- ══ HEAD — pivots at neck base (40, 52) ══ -->
+          <g id="aj-head" class="aj" style="transform-origin:40px 52px">
+            <!-- Neck -->
+            <rect x="34" y="44" width="12" height="12" rx="4"
+                  fill="url(#ag-skin)" stroke="#c87830" stroke-width="2"/>
+            <!-- Ears -->
+            <ellipse cx="12" cy="32" rx="6" ry="8"
+                     fill="url(#ag-skin)" stroke="#c87830" stroke-width="2.5"/>
+            <ellipse cx="68" cy="32" rx="6" ry="8"
+                     fill="url(#ag-skin)" stroke="#c87830" stroke-width="2.5"/>
+            <!-- Head circle — big expressive cartoon head -->
+            <circle cx="40" cy="28" r="26"
+                    fill="url(#ag-skin)" stroke="#c87830" stroke-width="3"/>
+            <!-- Hair mass -->
+            <path d="M14,24 C14,10 22,2 40,2 C58,2 66,10 66,24
+                     C66,20 62,14 56,12 C50,10 46,14 40,14
+                     C34,14 30,10 24,12 C18,14 14,20 14,24 Z"
+                  fill="url(#ag-hair)" stroke="#2a1204" stroke-width="1.5"/>
+            <!-- Hair fringe strands -->
+            <path d="M22,18 C20,14 24,10 28,12 C26,14 24,16 25,20 Z"
+                  fill="#3a1804"/>
+            <path d="M34,13 C33,9 38,7 41,9 C39,11 37,13 38,17 Z"
+                  fill="#3a1804"/>
+            <path d="M48,13 C49,9 54,9 56,12 C54,13 51,14 50,18 Z"
+                  fill="#3a1804"/>
+            <!-- Eye whites -->
+            <ellipse cx="29" cy="30" rx="7" ry="8" fill="white" stroke="#c87830" stroke-width="1.5"/>
+            <ellipse cx="51" cy="30" rx="7" ry="8" fill="white" stroke="#c87830" stroke-width="1.5"/>
+            <!-- Pupils (blink-animated groups) -->
+            <g class="alex-eye eye-l" style="transform-origin:29px 30px">
+              <ellipse cx="30" cy="30" rx="5" ry="6" fill="#1a0a04"/>
+              <circle  cx="32" cy="27" r="1.8" fill="rgba(255,255,255,.85)"/>
+            </g>
+            <g class="alex-eye eye-r" style="transform-origin:51px 30px">
+              <ellipse cx="52" cy="30" rx="5" ry="6" fill="#1a0a04"/>
+              <circle  cx="54" cy="27" r="1.8" fill="rgba(255,255,255,.85)"/>
+            </g>
+            <!-- Brows — separate paths so pose classes can rotate them -->
+            <path class="alex-brow-l" d="M21,20 Q28,17 33,19"
+                  fill="none" stroke="#3a1804" stroke-width="3"
+                  stroke-linecap="round" style="transform-origin:33px 19px"/>
+            <path class="alex-brow-r" d="M47,19 Q52,17 59,20"
+                  fill="none" stroke="#3a1804" stroke-width="3"
+                  stroke-linecap="round" style="transform-origin:47px 19px"/>
+            <!-- Nose -->
+            <ellipse cx="40" cy="36" rx="3" ry="2" fill="#e8a060" opacity=".7"/>
+            <!-- Mouth neutral -->
+            <path d="M31,42 Q40,48 49,42"
+                  fill="none" stroke="#c07050" stroke-width="3"
+                  stroke-linecap="round" class="alex-mouth-neutral"/>
+            <!-- Mouth big smile (smile-flash) -->
+            <path d="M28,41 Q40,50 52,41"
+                  fill="none" stroke="#c07050" stroke-width="3.5"
+                  stroke-linecap="round" class="alex-smile-big"/>
+            <!-- Mouth open (bend/effort) -->
+            <path d="M32,42 Q40,47 48,42"
+                  fill="none" stroke="#c07050" stroke-width="3"
+                  stroke-linecap="round" class="alex-mouth-open" style="opacity:0"/>
+          </g><!-- end #aj-head -->
+
+        </svg>
+      </div>
+
+      <!-- Event rings -->
+      <div class="ev-ring" id="ev-ring1"></div>
+      <div class="ev-ring" id="ev-ring2"></div>
+    </div>
+    <div id="anim-progress-bar"><div id="anim-progress-fill"></div></div>
+  </div>
+  <p class="muted" style="font-size:.82rem; text-align:center;">Please watch carefully.</p>
+</section>
+
+<!-- ════════════════════════════════════
+     S3 — DISTRACTOR (30-second timer)
+════════════════════════════════════ -->
+<section id="s-maths" class="screen">
+  <div class="card">
+    <div class="trial-badge" id="math-badge">After Clip 1</div>
+    <h2>Quick Maths</h2>
+    <p>Answer as many questions as you can in <strong>30 seconds</strong>. Work quickly and accurately.</p>
+    <div class="math-timer-wrap">
+      <div class="math-timer-ring">
+        <svg viewBox="0 0 70 70" width="70" height="70">
+          <circle cx="35" cy="35" r="30"/>
+          <circle class="progress" id="math-progress-circle" cx="35" cy="35" r="30"/>
+        </svg>
+        <div id="math-timer-text">30</div>
+      </div>
+      <div class="math-score-line" id="math-score-line">0 correct of 0</div>
+    </div>
+    <div class="q-count" id="q-count">Question 1</div>
+    <div class="math-display" id="math-q"></div>
+    <input class="math-input" type="number" id="math-ans" placeholder="?" autocomplete="off">
+    <div class="math-fb" id="math-fb"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     S4 — RECALL INSTRUCTIONS (per trial)
+════════════════════════════════════ -->
+<section id="s-recall-intro" class="screen">
+  <div class="card">
+    <div class="trial-badge" id="recall-badge">Clip 1 — Replay</div>
+    <h2>Mental Replay</h2>
+    <p>Replay the clip in your head from the beginning at the same speed it played. Three moments from the clip are shown below — <strong>one is a decoy that didn't happen as a key event</strong>. The other two are the real events, in the order they occurred.</p>
+    <p>On the next screen:</p>
+    <ol style="margin-left:1.4em; line-height:2.2;">
+      <li>Press <span class="kbd">SPACE</span> to start your mental replay.</li>
+      <li>When you reach the <strong>first real event</strong>, press its arrow key.</li>
+      <li>When you reach the <strong>second real event</strong>, press its arrow key.</li>
+    </ol>
+    <p class="muted">Replay at a natural pace. The arrow key for each card is shown beneath it.</p>
+    <div class="recall-cards" id="recall-intro-cards"></div>
+  </div>
+  <button class="btn" onclick="startRecall()">I'm ready &rarr;</button>
+</section>
+
+<!-- ════════════════════════════════════
+     S5 — RECALL SPACEBAR
+════════════════════════════════════ -->
+<section id="s-recall" class="screen">
+  <div class="card">
+    <h2>Mental Replay</h2>
+    <p>Replay the clip from the very beginning at the same speed it played, then press the arrow keys as you reach each real event.</p>
+    <div class="spacer"></div>
+    <div id="recall-status">Press <span class="kbd">SPACE</span> to begin your mental replay.</div>
+    <div class="spacer"></div>
+    <button class="btn" id="recall-start-btn" onclick="handleSpace()" style="display:block;margin:0 auto 8px;">Start Replay</button>
+    <div class="recall-cards" id="recall-live-cards"></div>
+    <div class="spacer"></div>
+    <p class="muted" style="text-align:center; font-size:.82rem;">On touchscreen, use the Start Replay button above, then tap each card.</p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     S6 — BETWEEN TRIALS
+════════════════════════════════════ -->
+<section id="s-between" class="screen">
+  <div class="card">
+    <h2 id="between-title">Great — one clip done!</h2>
+    <p id="between-body">Take a short rest if you need one, then press Continue when you are ready for the next clip.</p>
+  </div>
+  <button class="btn" onclick="nextTrial()">Continue &rarr;</button>
+</section>
+
+<!-- ════════════════════════════════════
+     S7 — THANK YOU (intermediate)
+════════════════════════════════════ -->
+<section id="s-done" class="screen">
+  <div class="card">
+    <h2>Well done!</h2>
+    <p>You have completed all three clips. Before we finish, we have one quick question for you.</p>
+  </div>
+  <button class="btn" onclick="showScreen('s-distraction')">Continue &rarr;</button>
+</section>
+
+<!-- ════════════════════════════════════
+     S7b — DISTRACTION CHECK
+════════════════════════════════════ -->
+<section id="s-distraction" class="screen">
+  <div class="card">
+    <h2>One last question</h2>
+    <p>Did you complete this test without any distractions or interruptions?</p>
+    <div class="row distraction-btns">
+      <button class="btn distraction-opt" id="dist-yes" onclick="selectDistraction(true)">Yes</button>
+      <button class="btn sec distraction-opt" id="dist-no"  onclick="selectDistraction(false)">No</button>
+    </div>
+    <div id="dist-note-wrap" style="display:none; width:100%; margin-top:8px;">
+      <label for="dist-note" style="font-size:.9rem; color:#555;">Please briefly describe what happened:</label>
+      <textarea id="dist-note" rows="3"
+        style="width:100%; margin-top:6px; padding:8px; border:1.5px solid var(--border); border-radius:6px; font-size:.95rem; resize:vertical;"
+        placeholder="e.g. phone rang, participant left the room…"></textarea>
+    </div>
+  </div>
+  <button class="btn" id="dist-submit" style="display:none" onclick="submitDistraction()">Submit &rarr;</button>
+</section>
+
+<!-- ════════════════════════════════════
+     S7c — DONE (final, fetch researcher)
+════════════════════════════════════ -->
+<section id="s-done-final" class="screen">
+  <div class="card">
+    <h2>Thank you!</h2>
+    <p>Your responses have been recorded.</p>
+    <p>Please let the researcher know you have finished.</p>
+  </div>
+  <button class="btn sec" onclick="showPcPrompt()">Researcher View</button>
+</section>
+
+<!-- ════════════════════════════════════
+     S8 — RESEARCHER RESULTS
+════════════════════════════════════ -->
+<section id="s-results" class="screen">
+  <div class="card">
+    <h2>Researcher Results — BTED</h2>
+    <p class="muted">All sessions stored in this browser.</p>
+    <hr>
+    <div id="res-content"></div>
+    <hr>
+    <div class="row">
+      <button class="btn" onclick="downloadCSV()">Download CSV</button>
+      <button class="btn sec" onclick="clearData()">Clear data</button>
+      <button class="btn sec" onclick="showScreen('s-done-final')">Back</button>
+    </div>
+  </div>
+</section>
+
+<!-- Passcode overlay -->
+<div id="pc-overlay">
+  <div class="pc-box">
+    <h2>Researcher access</h2>
+    <label>Passcode</label>
+    <input type="password" id="pc-input" placeholder="••••" maxlength="12"
+      onkeydown="if(event.key==='Enter')checkPc()">
+    <div id="pc-error"></div>
+    <div class="row">
+      <button class="btn" onclick="checkPc()">Unlock</button>
+      <button class="btn sec" onclick="closePc()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════ -->
+<script>
+/* ───────────────────────────────────────────────
+   TRIAL DEFINITIONS
+   Each trial: 30 s total, two events, an interval.
+   All times in ms.
+   Character (52px wide) floor heights:
+     Trial 1: pavement bottom = 140px
+     Trial 2: path bottom = 117px
+     Trial 3: counter-top = 85px (floor surface for char)
+─────────────────────────────────────────────── */
+const TRIALS = [
+  {
+    // ── Trial 1: Morning / School Run ──
+    name: 'Morning',
+    layer: 't1-layer',
+    event1Ms: 8000,   // picks up backpack  (EVENT A)
+    event2Ms: 16000,  // pushes open school gate (EVENT B)
+    // decoy: kicks the stone @12100ms
+    event1Label: 'Alex picks up the backpack',
+    event2Label: 'Alex pushes open the school gate',
+    decoyLabel:  'Alex kicks the stone',
+    charKF: [
+      { t:     0, x: 600, y: 140, face: 'l', pose: 'walk' },
+      { t:  2500, x: 500, y: 140, face: 'l', pose: 'walk' },
+      { t:  5000, x: 400, y: 140, face: 'l', pose: 'walk' },
+      { t:  6500, x: 345, y: 140, face: 'l', pose: 'walk' },
+      { t:  7200, x: 342, y: 140, face: 'l', pose: 'walk' },
+      { t:  7700, x: 340, y: 140, face: 'l', pose: 'bend' },
+      { t:  8000, x: 340, y: 140, face: 'l', pose: 'stand' }, // EVENT A
+      { t:  8700, x: 340, y: 140, face: 'l', pose: 'walk' },
+      { t: 11100, x: 239, y: 140, face: 'l', pose: 'walk' },
+      { t: 12100, x: 197, y: 140, face: 'l', pose: 'throw' }, // kick stone (decoy)
+      { t: 12600, x: 177, y: 140, face: 'l', pose: 'walk' },
+      { t: 14900, x:  80, y: 140, face: 'l', pose: 'walk' },
+      { t: 15600, x:  38, y: 140, face: 'l', pose: 'walk' },
+      { t: 15800, x:  28, y: 140, face: 'l', pose: 'stand' },
+      { t: 16000, x:  28, y: 140, face: 'l', pose: 'throw' }, // EVENT B — arm push
+      { t: 16800, x:  28, y: 140, face: 'l', pose: 'stand' },
+      { t: 18000, x:  28, y: 140, face: 'l', pose: 'stand' },
+    ],
+    onEvent1: () => {
+      // Backpack flash
+      const bp = document.getElementById('t1-backpack');
+      bp.style.filter = 'brightness(2) drop-shadow(0 0 8px #ffe040)';
+      setTimeout(() => { bp.style.filter = ''; }, 600);
+      flashRing('ev-ring1', 340, 140);
+      smileFlash();
+    },
+    onEvent2: () => {
+      document.getElementById('t1-gate').classList.add('open');
+      flashRing('ev-ring2', 28, 140);
+      smileFlash();
+    },
+  },
+
+  {
+    // ── Trial 2: Park Afternoon ──
+    name: 'Park',
+    layer: 't2-layer',
+    event1Ms: 6000,   // sits on bench (EVENT A)
+    event2Ms: 17700,  // throws leaf into pond (EVENT B)  GT interval: 11700ms
+    // decoy: crouches near pond walking to duck @13500ms
+    event1Label: 'Alex sits down on the bench',
+    event2Label: 'Alex throws the leaf into the pond',
+    decoyLabel:  'Alex crouches down to pet the dog',
+    charKF: [
+      { t:    0, x: -25, y: 117, face: 'r', pose: 'walk' },
+      { t: 2000, x:  55, y: 117, face: 'r', pose: 'walk' },
+      { t: 5000, x:  75, y: 117, face: 'r', pose: 'walk' },
+      { t: 5800, x:  75, y: 117, face: 'r', pose: 'sit' },
+      { t: 6000, x:  75, y: 107, face: 'r', pose: 'sit' },  // EVENT A — seated
+      { t: 9000, x:  75, y: 107, face: 'r', pose: 'sit' },
+      { t:10500, x:  75, y: 117, face: 'r', pose: 'stand' },
+      { t:11000, x:  75, y: 117, face: 'r', pose: 'walk' }, // start walk toward pond
+      { t:13000, x: 350, y: 117, face: 'r', pose: 'walk' }, // arrive near pond
+      { t:13500, x: 380, y: 117, face: 'r', pose: 'bend' }, // DECOY — crouch near duck @11500ms fires here
+      { t:14200, x: 380, y: 117, face: 'r', pose: 'stand' },
+      { t:15000, x: 300, y: 117, face: 'l', pose: 'walk' }, // back left
+      { t:16000, x: 210, y: 117, face: 'l', pose: 'walk' },
+      { t:16800, x: 210, y: 117, face: 'l', pose: 'bend' }, // pick up leaf
+      { t:17300, x: 210, y: 117, face: 'l', pose: 'stand' },
+      { t:17700, x: 210, y: 117, face: 'r', pose: 'throw' }, // EVENT B — throw toward pond
+      { t:18200, x: 210, y: 117, face: 'r', pose: 'stand' },
+      { t:19500, x: 210, y: 117, face: 'r', pose: 'stand' },
+    ],
+    onEvent1: () => {
+      flashRing('ev-ring1', 75, 107);
+      smileFlash();
+    },
+    onEvent2: () => {
+      flashRing('ev-ring2', 210, 117);
+      smileFlash();
+    },
+  },
+
+  {
+    // ── Trial 3: Evening Kitchen ──
+    name: 'Kitchen',
+    layer: 't3-layer',
+    event1Ms: 5000,   // turns on tap (EVENT A)
+    event2Ms: 25000,  // turns page of book (EVENT B)
+    decoyMs:  13000,  // opens fridge (DECOY)
+    // decoy: opens fridge @13500ms
+    event1Label: 'Alex turns on the tap',
+    event2Label: 'Alex turns the page of the book',
+    decoyLabel:  'Alex opens the kitchen cupboard',
+    charKF: [
+      { t:    0, x: 490, y: 85, face: 'l', pose: 'walk' },
+      { t: 1500, x: 380, y: 85, face: 'l', pose: 'walk' },
+      { t: 3000, x: 295, y: 85, face: 'l', pose: 'walk' },
+      { t: 4500, x: 272, y: 85, face: 'r', pose: 'stand' },
+      { t: 5000, x: 272, y: 85, face: 'r', pose: 'throw' }, // EVENT A — arm up to tap
+      { t: 5600, x: 272, y: 85, face: 'r', pose: 'stand' },
+      { t: 7000, x: 272, y: 85, face: 'r', pose: 'stand' },
+      { t: 8000, x: 272, y: 85, face: 'r', pose: 'bend' },  // rinsing
+      { t: 9500, x: 272, y: 85, face: 'r', pose: 'stand' },
+      { t:10500, x: 460, y: 85, face: 'r', pose: 'walk' },
+      { t:12500, x: 510, y: 85, face: 'r', pose: 'stand' },
+      { t:13000, x: 510, y: 85, face: 'r', pose: 'throw' }, // DECOY — opens fridge
+      { t:13500, x: 510, y: 85, face: 'r', pose: 'stand' },
+      { t:15500, x: 510, y: 85, face: 'r', pose: 'bend' },  // takes bowl
+      { t:16500, x: 510, y: 85, face: 'r', pose: 'stand' },
+      { t:17500, x: 350, y: 85, face: 'l', pose: 'walk' },
+      { t:19500, x: 160, y: 85, face: 'l', pose: 'walk' },
+      { t:21000, x: 100, y: 85, face: 'l', pose: 'walk' },
+      { t:22000, x:  72, y: 85, face: 'l', pose: 'stand' },
+      { t:23000, x:  72, y: 85, face: 'l', pose: 'sit' },
+      { t:24700, x:  72, y: 75, face: 'r', pose: 'bend' },
+      { t:25000, x:  72, y: 75, face: 'r', pose: 'throw' }, // EVENT B — page turn
+      { t:25600, x:  72, y: 75, face: 'r', pose: 'sit' },
+      { t:26500, x:  72, y: 75, face: 'r', pose: 'sit' },
+    ],
+    onEvent1: () => {
+      document.getElementById('t3-tap-handle').classList.add('on');
+      flashRing('ev-ring1', 272, 85);
+      smileFlash();
+    },
+    onEvent2: () => {
+      document.getElementById('t3-book').classList.add('page-turn');
+      flashRing('ev-ring2', 72, 75);
+      smileFlash();
+    },
+    onDecoy: () => {
+      document.getElementById('t3-fridge').classList.add('open');
+      setTimeout(() => document.getElementById('t3-fridge').classList.remove('open'), 1800);
+    },
+  },
+];
+
+/* ───────────────────────────────────────────────
+   STATE
+─────────────────────────────────────────────── */
+const PASSCODE     = '1234';
+const STORAGE_KEY  = 'bted_sessions_v2';
+const TOTAL_TRIALS = 3;
+
+let participantID     = '';
+let sessionTimestamp  = '';
+let trialIndex        = 0;
+let trialResults      = [];
+
+// distraction check
+let distractionFree = null;   // true = no distractions, false = disrupted
+let distractionNote = '';
+
+// animation
+let animRAF       = null;
+let animStart     = null;
+let walkInterval  = null;
+let charKFs       = [];
+let kfIndex       = 0;
+let ev1Fired      = false;
+let ev2Fired      = false;
+let evDFired      = false;  // decoy
+let currentTrial  = null;
+
+// maths
+let mathQs        = [];
+let mathIdx       = 0;
+let mathOK        = 0;
+let mathAttempted = 0;
+let mathLog       = [];
+let mathTimerRAF  = null;
+let mathEndTime   = 0;
+
+// recall
+let recallState   = 0;  // 0=waiting space, 1=space pressed/waiting 1st arrow, 2=waiting 2nd arrow
+let press1ms      = null;
+let press2ms      = null;
+let recallStartMs = null;
+// Cards for current trial: array of {id:'ev1'|'ev2'|'decoy', label, position:'left'|'mid'|'right', key:'ArrowLeft'|'ArrowDown'|'ArrowRight'}
+let recallCards   = [];
+let recallPress1Card = null;
+let recallPress2Card = null;
+
+/* ───────────────────────────────────────────────
+   SCREEN MGMT
+─────────────────────────────────────────────── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ───────────────────────────────────────────────
+   WELCOME
+─────────────────────────────────────────────── */
+function startStudy() {
+  const raw = document.getElementById('pid-input').value.trim();
+  if (!raw) { alert('Please enter a Participant ID.'); return; }
+  participantID    = raw;
+  sessionTimestamp = new Date().toISOString();
+  trialIndex       = 0;
+  trialResults     = [];
+  beginTrialIntro();
+}
+
+/* ───────────────────────────────────────────────
+   TRIAL FLOW
+─────────────────────────────────────────────── */
+function beginTrialIntro() {
+  currentTrial = TRIALS[trialIndex];
+  document.getElementById('trial-badge').textContent = `Clip ${trialIndex+1} of ${TOTAL_TRIALS}`;
+  showScreen('s-video-intro');
+}
+
+function startVideo() {
+  document.querySelectorAll('.trial-layer').forEach(l => l.style.display = 'none');
+  document.getElementById(currentTrial.layer).style.display = '';
+
+  ev1Fired = false;
+  ev2Fired = false;
+  evDFired = false;
+  charKFs  = currentTrial.charKF;
+  kfIndex  = 0;
+  // Derive duration from last keyframe — no hardcoded 30s
+  currentTrial._duration = charKFs[charKFs.length - 1].t;
+
+  // Reset character
+  const ch = document.getElementById('char');
+  ch.className = '';
+  ch.classList.remove('walking', 'stand', 'bend', 'sit', 'throw', 'smile-flash');
+  const t0 = charKFs[0];
+  ch.style.left   = t0.x + 'px';
+  ch.style.bottom = t0.y + 'px';
+  ch.style.transform = t0.face === 'l' ? 'scaleX(-1)' : 'scaleX(1)';
+  applyPose(ch, t0.pose);
+
+  // Reset any open states from previous trials
+  document.getElementById('t1-gate').classList.remove('open');
+  document.getElementById('t1-door').classList.remove('open');
+  document.getElementById('t3-book').classList.remove('page-turn');
+  document.getElementById('t3-fridge').classList.remove('open');
+  document.getElementById('t3-tap-handle').classList.remove('on');
+
+  document.getElementById('anim-progress-fill').style.width = '0%';
+
+  // Start CSS animations
+  const layer = document.getElementById(currentTrial.layer);
+  layer.querySelectorAll('*').forEach(el => { el.style.animationPlayState = 'running'; });
+  // Butterfly pseudo-element wings — driven by .running class (JS can't set pseudo-element styles)
+  const butterfly = document.getElementById('t2-butterfly');
+  if (butterfly) butterfly.classList.add('running');
+
+  showScreen('s-video');
+
+  animStart = performance.now();
+  animRAF = requestAnimationFrame(animTick);
+  walkInterval = setInterval(toggleWalk, 220);
+}
+
+let walkFrame = false;
+function toggleWalk() {
+  // No-op: walk cycle is now driven purely by the CSS `walking` class
+  // and @keyframes animation. This interval is kept for compatibility
+  // but does nothing.
+}
+
+/* Apply pose class to #char SVG character */
+function applyPose(ch, pose) {
+  ch.classList.remove('walking', 'stand', 'bend', 'sit', 'throw');
+  if (pose === 'walk') {
+    ch.classList.add('walking');
+  } else if (pose === 'idle') {
+    ch.classList.add('stand');
+  } else {
+    ch.classList.add(pose); // bend | sit | throw | stand
+  }
+}
+
+function getCurrentPose() {
+  if (!charKFs || kfIndex === 0) return charKFs[0].pose;
+  return charKFs[Math.min(kfIndex, charKFs.length - 1)].pose;
+}
+
+function animTick(ts) {
+  const elapsed  = ts - animStart;
+  const trial    = currentTrial;
+  const duration = trial._duration;
+
+  document.getElementById('anim-progress-fill').style.width =
+    Math.min((elapsed / duration) * 100, 100) + '%';
+
+  updateCharacter(elapsed);
+
+  if (!ev1Fired && elapsed >= trial.event1Ms) {
+    ev1Fired = true;
+    trial.onEvent1();
+  }
+  if (!ev2Fired && elapsed >= trial.event2Ms) {
+    ev2Fired = true;
+    trial.onEvent2();
+  }
+  if (!evDFired && trial.decoyMs && elapsed >= trial.decoyMs) {
+    evDFired = true;
+    if (trial.onDecoy) trial.onDecoy();
+  }
+
+  if (elapsed < duration) {
+    animRAF = requestAnimationFrame(animTick);
+  } else {
+    endVideo();
+  }
+}
+
+function updateCharacter(elapsed) {
+  const kfs = charKFs;
+  let i = kfs.length - 1;
+  for (let j = 0; j < kfs.length - 1; j++) {
+    if (elapsed >= kfs[j].t && elapsed < kfs[j+1].t) { i = j; break; }
+  }
+  const kfA = kfs[i];
+  const kfB = kfs[Math.min(i + 1, kfs.length - 1)];
+  const span = kfB.t - kfA.t;
+  const alpha = span > 0 ? Math.min((elapsed - kfA.t) / span, 1) : 1;
+  const x = kfA.x + (kfB.x - kfA.x) * alpha;
+  const y = kfA.y + (kfB.y - kfA.y) * alpha;
+
+  const ch = document.getElementById('char');
+  ch.style.left   = x + 'px';
+  ch.style.bottom = y + 'px';
+
+  const face = kfA.face;
+  ch.style.transform = face === 'l' ? 'scaleX(-1)' : 'scaleX(1)';
+
+  const pose = kfA.pose;
+  applyPose(ch, pose);
+
+  // Facial expression: open mouth on bend/effort
+  const svg = ch.querySelector('#alex-svg');
+  if (svg) {
+    const mOpen = svg.querySelector('.alex-mouth-open');
+    const mNeutral = svg.querySelector('.alex-mouth-neutral');
+    if (mOpen && mNeutral) {
+      const effort = (pose === 'bend');
+      mOpen.style.opacity    = effort ? '1' : '0';
+      mNeutral.style.opacity = effort ? '0' : '1';
+    }
+  }
+
+  kfIndex = i;
+}
+
+function endVideo() {
+  cancelAnimationFrame(animRAF);
+  clearInterval(walkInterval);
+  document.getElementById('anim-progress-fill').style.width = '100%';
+
+  const layer = document.getElementById(currentTrial.layer);
+  layer.querySelectorAll('*').forEach(el => { el.style.animationPlayState = 'paused'; });
+  const butterfly = document.getElementById('t2-butterfly');
+  if (butterfly) butterfly.classList.remove('running');
+
+  setTimeout(() => {
+    initMath();
+  }, 500);
+}
+
+/* ───────────────────────────────────────────────
+   DISTRACTOR — 30 seconds continuous
+─────────────────────────────────────────────── */
+function generateMathQ() {
+  const tpls = [
+    () => { const a=ri(12,49), b=ri(12,49); return {q:`${a} + ${b}`, a: a+b}; },
+    () => { const a=ri(30,89), b=ri(10,Math.floor(a/2)); return {q:`${a} \u2212 ${b}`, a: a-b}; },
+    () => { const a=ri(3,9),   b=ri(11,19); return {q:`${a} \u00d7 ${b}`, a: a*b}; },
+  ];
+  return tpls[Math.floor(Math.random()*3)]();
+}
+function ri(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+function initMath() {
+  mathIdx = 0; mathOK = 0; mathAttempted = 0; mathLog = [];
+  mathEndTime = performance.now() + 30000;
+  document.getElementById('math-badge').textContent = `After Clip ${trialIndex + 1}`;
+  loadNextMathQ();
+  runMathTimer();
+  showScreen('s-maths');
+}
+
+function loadNextMathQ() {
+  const q = generateMathQ();
+  mathQs[mathIdx] = q;
+  document.getElementById('q-count').textContent = `Question ${mathIdx + 1}`;
+  document.getElementById('math-q').textContent  = q.q + ' = ?';
+  document.getElementById('math-ans').value = '';
+  document.getElementById('math-fb').textContent = '';
+  document.getElementById('math-fb').className   = 'math-fb';
+  document.getElementById('math-ans').focus();
+  updateScoreLine();
+}
+
+function updateScoreLine() {
+  document.getElementById('math-score-line').textContent =
+    `${mathOK} correct of ${mathAttempted} attempted`;
+}
+
+function runMathTimer() {
+  const TOTAL = 30000;
+  const circ  = 2 * Math.PI * 30; // ≈188.5
+  const circle = document.getElementById('math-progress-circle');
+  const timerText = document.getElementById('math-timer-text');
+
+  function tick() {
+    const remaining = Math.max(0, mathEndTime - performance.now());
+    const secs = Math.ceil(remaining / 1000);
+    timerText.textContent = secs;
+    circle.style.strokeDashoffset = circ * (1 - remaining / TOTAL);
+    circle.classList.toggle('urgent', secs <= 8);
+
+    if (remaining > 0) {
+      mathTimerRAF = requestAnimationFrame(tick);
+    } else {
+      finishMath();
+    }
+  }
+  mathTimerRAF = requestAnimationFrame(tick);
+}
+
+function submitMath() {
+  if (performance.now() >= mathEndTime) return;
+  const val = parseInt(document.getElementById('math-ans').value.trim(), 10);
+  if (isNaN(val)) { document.getElementById('math-ans').focus(); return; }
+  const q = mathQs[mathIdx];
+  const right = (val === q.a);
+  if (right) mathOK++;
+  mathAttempted++;
+  mathLog.push({ q: q.q, given: val, correct: q.a, right });
+  const fb = document.getElementById('math-fb');
+  fb.textContent = right ? 'Correct!' : `Not quite — answer was ${q.a}.`;
+  fb.className   = 'math-fb ' + (right ? 'ok' : 'err');
+  mathIdx++;
+  updateScoreLine();
+  // auto-advance after 600ms
+  setTimeout(() => {
+    if (performance.now() < mathEndTime) loadNextMathQ();
+  }, 600);
+}
+
+document.getElementById('math-ans').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitMath();
+});
+
+function finishMath() {
+  cancelAnimationFrame(mathTimerRAF);
+  document.getElementById('math-ans').blur();
+  setTimeout(() => {
+    buildRecallCards(trialIndex);
+  }, 800);
+}
+
+/* ───────────────────────────────────────────────
+   RECALL — card builder + freeze-frame HTML
+─────────────────────────────────────────────── */
+
+/* Builds an SVG Alex div for use in freeze-frame panels */
+function alexSVG(pose, x, y, flip) {
+  const flipStr = flip ? 'scaleX(-1)' : '';
+  // Inline transforms for each of the 12 segments per pose
+  const P = {
+    stand: {
+      body:'rotate(0deg)', head:'',
+      uarml:'rotate(-18deg)', farml:'rotate(-10deg)',
+      uarmr:'rotate(18deg)',  farmr:'rotate(-10deg)',
+      thigl:'rotate(0deg)', shinl:'rotate(0deg)', footl:'rotate(0deg)',
+      thigr:'rotate(0deg)', shinr:'rotate(0deg)', footr:'rotate(0deg)',
+    },
+    walk: {
+      body:'rotate(-1.5deg)', head:'rotate(1.5deg)',
+      uarml:'rotate(32deg)',  farml:'rotate(-16deg)',
+      uarmr:'rotate(-32deg)', farmr:'rotate(-12deg)',
+      thigl:'rotate(-30deg)', shinl:'rotate(10deg)', footl:'rotate(0deg)',
+      thigr:'rotate(30deg)',  shinr:'rotate(-38deg)', footr:'rotate(-18deg)',
+    },
+    bend: {
+      body:'rotate(36deg)', head:'translateY(6px) rotate(-28deg)',
+      uarml:'rotate(68deg)',  farml:'rotate(30deg)',
+      uarmr:'rotate(-10deg)', farmr:'rotate(-8deg)',
+      thigl:'rotate(-18deg)', shinl:'rotate(-20deg)', footl:'rotate(0deg)',
+      thigr:'rotate(18deg)',  shinr:'rotate(-20deg)', footr:'rotate(0deg)',
+    },
+    sit: {
+      body:'rotate(4deg)', head:'',
+      uarml:'rotate(14deg)',  farml:'rotate(-10deg)',
+      uarmr:'rotate(-14deg)', farmr:'rotate(-10deg)',
+      thigl:'rotate(82deg)',  shinl:'rotate(-76deg)', footl:'rotate(-6deg)',
+      thigr:'rotate(82deg)',  shinr:'rotate(-76deg)', footr:'rotate(-6deg)',
+    },
+    throw: {
+      body:'rotate(-6deg)', head:'',
+      uarml:'rotate(14deg)',  farml:'rotate(-10deg)',
+      uarmr:'rotate(-95deg)', farmr:'rotate(-20deg)',
+      thigl:'rotate(-6deg)',  shinl:'rotate(4deg)',  footl:'rotate(0deg)',
+      thigr:'rotate(6deg)',   shinr:'rotate(-4deg)', footr:'rotate(0deg)',
+    },
+  };
+  const t = P[pose] || P.stand;
+  const browL = pose === 'bend' ? 'rotate(12deg)' : pose === 'throw' ? 'rotate(-8deg) translateY(-1px)' : '';
+  const browR = pose === 'bend' ? 'rotate(-12deg)' : pose === 'throw' ? 'rotate(8deg) translateY(-1px)' : '';
+  const mOpen    = pose === 'bend' ? 1 : 0;
+  const mNeutral = 1 - mOpen;
+
+  // Each freeze-frame SVG gets its own <defs> (no shared document IDs)
+  const uid = Math.random().toString(36).slice(2,7);
+  return `<div class="char" style="position:absolute;bottom:${y}px;left:${x}px;width:80px;height:110px;transform:${flipStr}">
+  <svg viewBox="0 0 80 150" width="80" height="110" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+    <defs>
+      <linearGradient id="fs-shirt-${uid}" x1="0%" y1="0%" x2="60%" y2="100%">
+        <stop offset="0%" stop-color="#f04040"/><stop offset="100%" stop-color="#b81818"/>
+      </linearGradient>
+      <linearGradient id="fs-trou-${uid}" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#4060c0"/><stop offset="100%" stop-color="#1c3888"/>
+      </linearGradient>
+      <linearGradient id="fs-shoe-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#1a1a2e"/><stop offset="100%" stop-color="#2e2e50"/>
+      </linearGradient>
+      <linearGradient id="fs-skin-${uid}" x1="20%" y1="0%" x2="80%" y2="100%">
+        <stop offset="0%" stop-color="#fdd5a0"/><stop offset="100%" stop-color="#f0b870"/>
+      </linearGradient>
+      <linearGradient id="fs-hair-${uid}" x1="0%" y1="0%" x2="50%" y2="100%">
+        <stop offset="0%" stop-color="#4a2808"/><stop offset="100%" stop-color="#2a1204"/>
+      </linearGradient>
+    </defs>
+    <!-- Right thigh (back) -->
+    <g style="transform:${t.thigr};transform-origin:50px 97px">
+      <path d="M44,97 C43,97 41,104 41,114 C41,117 43,119 46,119 C49,119 51,117 51,114 C51,104 50,97 50,97 Z"
+            fill="url(#fs-trou-${uid})" stroke="#101840" stroke-width="2.5"/>
+      <g style="transform:${t.shinr};transform-origin:46px 116px">
+        <path d="M39,114 C38,114 37,120 37,131 C37,136 40,138 46,138 C52,138 55,136 55,131 C55,120 54,114 53,114 Z"
+              fill="url(#fs-trou-${uid})" stroke="#101840" stroke-width="2.5"/>
+        <g style="transform:${t.footr};transform-origin:46px 135px">
+          <path d="M36,135 C35,135 34,137 34,141 C34,144 36,150 40,150 C46,150 58,149 60,147 C62,145 60,141 58,139 C54,137 48,135 46,135 Z"
+                fill="url(#fs-shoe-${uid})" stroke="#0a0a18" stroke-width="2"/>
+        </g>
+      </g>
+    </g>
+    <!-- Left thigh (front) -->
+    <g style="transform:${t.thigl};transform-origin:30px 97px">
+      <path d="M24,97 C23,97 21,104 21,114 C21,117 23,119 26,119 C29,119 31,117 32,114 C33,104 31,97 30,97 Z"
+            fill="url(#fs-trou-${uid})" stroke="#101840" stroke-width="2.5"/>
+      <g style="transform:${t.shinl};transform-origin:26px 116px">
+        <path d="M19,114 C18,114 17,120 17,131 C17,136 20,138 26,138 C32,138 35,136 35,131 C35,120 34,114 33,114 Z"
+              fill="url(#fs-trou-${uid})" stroke="#101840" stroke-width="2.5"/>
+        <g style="transform:${t.footl};transform-origin:26px 135px">
+          <path d="M16,135 C14,135 12,137 12,141 C12,144 14,150 18,150 C24,150 38,149 40,147 C42,145 40,141 38,139 C34,137 28,135 26,135 Z"
+                fill="url(#fs-shoe-${uid})" stroke="#0a0a18" stroke-width="2"/>
+        </g>
+      </g>
+    </g>
+    <!-- Body group (contains torso + arms) -->
+    <g style="transform:${t.body};transform-origin:40px 75px">
+      <!-- Right upper arm (back) -->
+      <g style="transform:${t.uarmr};transform-origin:57px 60px">
+        <path d="M53,58 C52,58 50,63 50,71 C50,74 52,76 55,76 C58,76 60,74 61,71 C62,65 61,58 57,58 Z"
+              fill="url(#fs-shirt-${uid})" stroke="#901010" stroke-width="2.5"/>
+        <g style="transform:${t.farmr};transform-origin:55px 74px">
+           <path d="M47,72 C46,72 45,78 45,87 C45,91 48,93 53,93 C58,93 61,91 61,87 C61,80 60,72 55,72 Z"
+                  fill="url(#fs-skin-${uid})" stroke="#c87830" stroke-width="2"/>
+          <!-- Right hand — simple mitten -->
+          <ellipse cx="49" cy="91" rx="9" ry="6" fill="url(#fs-skin-${uid})" stroke="#c87830" stroke-width="1.5"/>
+          <line x1="49" y1="85" x2="49" y2="97" stroke="#c87830" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+        </g>
+      </g>
+      <!-- Waistband -->
+      <rect x="20" y="90" width="40" height="8" rx="3" fill="#1c3888" stroke="#101840" stroke-width="1.5"/>
+      <!-- Shirt body -->
+      <path d="M18,58 C15,60 14,66 14,75 C14,83 16,90 20,92 L60,92 C64,90 66,83 66,75 C66,66 65,60 62,58 C58,55 50,53 40,53 C30,53 22,55 18,58 Z"
+            fill="url(#fs-shirt-${uid})" stroke="#901010" stroke-width="3"/>
+      <path d="M16,72 Q40,74 64,72 Q64,77 64,77 Q40,79 16,77 Z" fill="#b81818" opacity=".9"/>
+      <ellipse cx="40" cy="54" rx="11" ry="5" fill="#d82828" stroke="#901010" stroke-width="2"/>
+      <!-- Left upper arm (front) -->
+      <g style="transform:${t.uarml};transform-origin:23px 60px">
+        <path d="M19,58 C18,58 16,63 16,71 C16,74 18,76 21,76 C24,76 26,74 27,71 C28,65 27,58 23,58 Z"
+              fill="url(#fs-shirt-${uid})" stroke="#901010" stroke-width="2.5"/>
+        <g style="transform:${t.farml};transform-origin:21px 74px">
+           <path d="M13,72 C12,72 11,78 11,87 C11,91 14,93 19,93 C24,93 27,91 27,87 C27,80 26,72 21,72 Z"
+                  fill="url(#fs-skin-${uid})" stroke="#c87830" stroke-width="2"/>
+          <!-- Left hand — simple mitten -->
+          <ellipse cx="15" cy="91" rx="9" ry="6" fill="url(#fs-skin-${uid})" stroke="#c87830" stroke-width="1.5"/>
+          <line x1="15" y1="85" x2="15" y2="97" stroke="#c87830" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+    <!-- Head -->
+    <g style="transform:${t.head};transform-origin:40px 52px">
+      <rect x="34" y="44" width="12" height="12" rx="4" fill="url(#fs-skin-${uid})" stroke="#c87830" stroke-width="2"/>
+      <ellipse cx="12" cy="32" rx="6" ry="8" fill="url(#fs-skin-${uid})" stroke="#c87830" stroke-width="2.5"/>
+      <ellipse cx="68" cy="32" rx="6" ry="8" fill="url(#fs-skin-${uid})" stroke="#c87830" stroke-width="2.5"/>
+      <circle cx="40" cy="28" r="26" fill="url(#fs-skin-${uid})" stroke="#c87830" stroke-width="3"/>
+      <path d="M14,24 C14,10 22,2 40,2 C58,2 66,10 66,24 C66,20 62,14 56,12 C50,10 46,14 40,14 C34,14 30,10 24,12 C18,14 14,20 14,24 Z"
+            fill="url(#fs-hair-${uid})" stroke="#2a1204" stroke-width="1.5"/>
+      <path d="M22,18 C20,14 24,10 28,12 C26,14 24,16 25,20 Z" fill="#3a1804"/>
+      <path d="M34,13 C33,9 38,7 41,9 C39,11 37,13 38,17 Z" fill="#3a1804"/>
+      <path d="M48,13 C49,9 54,9 56,12 C54,13 51,14 50,18 Z" fill="#3a1804"/>
+      <ellipse cx="29" cy="30" rx="7" ry="8" fill="white" stroke="#c87830" stroke-width="1.5"/>
+      <ellipse cx="51" cy="30" rx="7" ry="8" fill="white" stroke="#c87830" stroke-width="1.5"/>
+      <ellipse cx="30" cy="30" rx="5" ry="6" fill="#1a0a04"/>
+      <circle  cx="32" cy="27" r="1.8" fill="rgba(255,255,255,.85)"/>
+      <ellipse cx="52" cy="30" rx="5" ry="6" fill="#1a0a04"/>
+      <circle  cx="54" cy="27" r="1.8" fill="rgba(255,255,255,.85)"/>
+      <path d="M21,20 Q28,17 33,19" fill="none" stroke="#3a1804" stroke-width="3"
+            stroke-linecap="round" style="transform:${browL};transform-origin:33px 19px"/>
+      <path d="M47,19 Q52,17 59,20" fill="none" stroke="#3a1804" stroke-width="3"
+            stroke-linecap="round" style="transform:${browR};transform-origin:47px 19px"/>
+      <ellipse cx="40" cy="36" rx="3" ry="2" fill="#e8a060" opacity=".7"/>
+      <path d="M31,42 Q40,48 49,42" fill="none" stroke="#c07050" stroke-width="3"
+            stroke-linecap="round" opacity="${mNeutral}"/>
+      <path d="M28,41 Q40,50 52,41" fill="none" stroke="#c07050" stroke-width="3.5"
+            stroke-linecap="round" opacity="0"/>
+      <path d="M32,42 Q40,47 48,42" fill="none" stroke="#c07050" stroke-width="3"
+            stroke-linecap="round" opacity="${mOpen}"/>
+    </g>
+  </svg>
+</div>`;
+}
+
+/* FREEZE_FRAMES built after alexSVG() is defined */
+function buildFreezeFrames() {
+  const t1Scene = (gateOpen, backpackVisible, alexPose, alexX, alexY, alexFlip, extraClass) => `<div class="ff-stage">
+    <div class="p-t1-sky"></div>
+    <div class="p-t1-sun"></div>
+    <div class="p-t1-cloud1"></div>
+    <div class="p-t1-cloud2"></div>
+    <div class="p-t1-bird"></div>
+    <div class="p-t1-road"></div>
+    <div class="p-t1-pavement"></div>
+    <div class="p-t1-tree2"><div class="tree-trunk"></div><div class="tree-top"></div></div>
+    <div class="p-t1-postbox"></div>
+    <div class="p-t1-house">
+      <div class="h-roof"></div><div class="h-chimney"></div>
+      <div class="h-wall"><div class="h-window"></div><div class="h-window-sill"></div>
+        <div class="h-num">12</div>
+        <div class="h-door-frame"></div>
+        <div class="h-door"><div class="h-door-panel"></div><div class="h-door-slot"></div><div class="h-knob"></div></div></div>
+    </div>
+    <div class="p-t1-gate${gateOpen ? ' open' : ''}">
+      <div class="gate-arch"><span>SCHOOL</span></div>
+      <div class="gate-pillar l"></div><div class="gate-pillar r"></div>
+      <div class="gate-panel"><div class="gate-rail"></div><div class="gate-rail"></div>
+        <div class="gate-rail"></div><div class="gate-rail"></div>
+        <div class="gate-h top"></div><div class="gate-h bot"></div></div>
+    </div>
+    <div class="p-t1-stone"></div>
+    ${backpackVisible ? '<div class="p-t1-backpack"><div class="bp-strap-l"></div><div class="bp-strap-r"></div></div>' : ''}
+    ${alexSVG(alexPose, alexX, alexY, alexFlip)}
+  </div>`;
+
+  const t2Scene = (showDog, leafThrown, alexPose, alexX, alexY, alexFlip) => `<div class="ff-stage">
+    <div class="p-t2-sky"></div>
+    <div class="p-t2-grass"></div>
+    <div class="p-t2-grass-f"></div>
+    <div class="p-t2-path"></div>
+    <div class="p-t2-pond"></div>
+    <div class="p-t2-duck"></div>
+    <div class="p-t2-tree1"><div class="tree-trunk"></div><div class="tree-top"></div></div>
+    <div class="p-t2-tree2"><div class="tree-trunk"></div><div class="tree-top"></div></div>
+    <div class="p-t2-bush p-t2-bush1"><div class="bush-base"></div><div class="bush-top-l"></div><div class="bush-top-r"></div></div>
+    <div class="p-t2-bush p-t2-bush2"><div class="bush-base"></div><div class="bush-top-l"></div><div class="bush-top-r"></div></div>
+    <div class="p-t2-bush p-t2-bush3"><div class="bush-base"></div><div class="bush-top-l"></div><div class="bush-top-r"></div></div>
+    <div class="p-t2-bench"><div class="bench-seat"></div><div class="bench-leg-l"></div><div class="bench-leg-r"></div></div>
+    <div class="p-t2-leaf${leafThrown ? ' thrown' : ''}"></div>
+    ${showDog ? `<div class="p-t2-dog"><div class="dog-body"><div class="dog-tail"></div>
+      <div class="dog-head"><div class="dog-ear"></div><div class="dog-snout"></div></div>
+      <div class="dog-leg fl"></div><div class="dog-leg fr"></div>
+      <div class="dog-leg rl"></div><div class="dog-leg rr"></div></div></div>` : ''}
+    ${alexSVG(alexPose, alexX, alexY, alexFlip)}
+  </div>`;
+
+  const t3Scene = (tapOn, pageOpen, cupboardOpen, alexPose, alexX, alexY, alexFlip) => `<div class="ff-stage">
+    <div class="p-t3-bg"></div>
+    <div class="p-t3-tiles"></div>
+    <div class="p-t3-window"></div>
+    <div class="p-t3-cupboard1${cupboardOpen ? ' open' : ''}"><div class="cup-door"></div></div>
+    <div class="p-t3-cupboard2"><div class="cup-door"></div></div>
+    <div class="p-t3-fridge"><div class="p-t3-fridge-door"><div class="fridge-line"></div>
+      <div class="fridge-handle top"></div><div class="fridge-handle bot"></div></div></div>
+    <div class="p-t3-sink"></div>
+    <div class="p-t3-tap"></div>
+    <div class="p-t3-tap-handle${tapOn ? ' on' : ''}"><div class="tap-h-bar"></div><div class="tap-v-bar"></div></div>
+    ${tapOn ? '<div class="p-t3-water"></div>' : ''}
+    <div class="p-t3-counter-top"></div>
+    <div class="p-t3-counter"></div>
+    <div class="p-t3-floor"></div>
+    <div class="p-t3-table"><div class="table-shine"></div></div>
+    <div class="p-t3-chair"><div class="chair-back"></div><div class="chair-seat"></div>
+      <div class="chair-leg-l"></div><div class="chair-leg-r"></div></div>
+    <div class="p-t3-book${pageOpen ? ' page-turn' : ''}"><div class="book-cover"></div>
+      <div class="book-spine"></div><div class="book-page-back"></div><div class="p-t3-book-page"></div></div>
+    ${alexSVG(alexPose, alexX, alexY, alexFlip)}
+  </div>`;
+
+  return [
+    // ── Trial 1 ──
+    {
+      ev1:   t1Scene(false, true,  'bend',  340, 140, true),   // picks up backpack, face-l=flip
+      ev2:   t1Scene(true,  false, 'throw', 28,  140, true),   // pushes gate open, face-l=flip
+      decoy: t1Scene(false, false, 'sit',   230, 140, false),  // decoy: sitting on kerb
+    },
+    // ── Trial 2 ──
+    {
+      ev1:   t2Scene(false, false, 'sit',   75,  107, false),  // sits on bench, face-r=no flip
+      ev2:   t2Scene(false, true,  'throw', 210, 117, false),  // throws leaf, face-r=no flip
+      decoy: t2Scene(true,  false, 'bend',  50,  117, false),  // decoy: crouches near dog
+    },
+    // ── Trial 3 ──
+    {
+      ev1:   t3Scene(true,  false, false,   'throw', 272, 85,  false),  // turns on tap, face-r=no flip
+      ev2:   t3Scene(true,  true,  false,   'throw', 72,  75,  false), // turns page, face-r=no flip
+      decoy: t3Scene(false, false, true,    'throw', 80,  85,  false), // decoy: opens cupboard
+    },
+  ];
+}
+
+// Lazily built the first time buildRecallCards() is called (after alexSVG is defined)
+let _FREEZE_FRAMES = null;
+function getFreezeFrames() {
+  if (!_FREEZE_FRAMES) _FREEZE_FRAMES = buildFreezeFrames();
+  return _FREEZE_FRAMES;
+}
+
+function buildRecallCards(tIdx) {
+  const t   = TRIALS[tIdx];
+  const ff  = getFreezeFrames()[tIdx];
+  const positions = ['left','mid','right'];
+  // Shuffle positions: assign ev1, ev2, decoy to random slots
+  const shuffled = [...positions].sort(() => Math.random() - .5);
+  const keyMap = { left:'ArrowLeft', mid:'ArrowDown', right:'ArrowRight' };
+  const symMap = { left:'←', mid:'↓', right:'→' };
+
+  recallCards = [
+    { id:'ev1',   label: t.event1Label, pos: shuffled[0], key: keyMap[shuffled[0]], sym: symMap[shuffled[0]], html: ff.ev1 },
+    { id:'ev2',   label: t.event2Label, pos: shuffled[1], key: keyMap[shuffled[1]], sym: symMap[shuffled[1]], html: ff.ev2 },
+    { id:'decoy', label: t.decoyLabel,  pos: shuffled[2], key: keyMap[shuffled[2]], sym: symMap[shuffled[2]], html: ff.decoy },
+  ];
+  // Sort by position for display order
+  const displayOrder = ['left','mid','right'];
+  const sorted = displayOrder.map(p => recallCards.find(c => c.pos === p));
+
+  function cardsHTML(idSuffix) {
+    return sorted.map(c => `
+      <div class="ev-card" id="card-${c.id}-${idSuffix}" data-cardid="${c.id}">
+        <div class="ev-card-frame">${c.html}</div>
+        <div class="ev-card-caption">${c.label}</div>
+        <div class="ev-card-key" id="key-${c.id}-${idSuffix}">${c.sym}</div>
+      </div>`).join('');
+  }
+
+  document.getElementById('recall-intro-cards').innerHTML = cardsHTML('intro');
+  document.getElementById('recall-live-cards').innerHTML  = cardsHTML('live');
+
+  // Set up touch handlers on live cards
+  sorted.forEach(c => {
+    const el = document.getElementById(`card-${c.id}-live`);
+    if (el) el.addEventListener('click', () => handleArrow(c.key));
+  });
+
+  // Show recall intro
+  document.getElementById('recall-badge').textContent = `Clip ${tIdx + 1} \u2014 Replay`;
+  showScreen('s-recall-intro');
+}
+
+/* ───────────────────────────────────────────────
+   RECALL — spacebar + arrow key handling
+─────────────────────────────────────────────── */
+function startRecall() {
+  recallState = 0; press1ms = null; press2ms = null;
+  recallStartMs = null;
+  recallPress1Card = null; recallPress2Card = null;
+  showScreen('s-recall');
+  updateRecallStatus();
+  document.addEventListener('keydown', onRecallKey);
+}
+
+function onRecallKey(e) {
+  if (e.code === 'Space') { e.preventDefault(); handleSpace(); return; }
+  const arrows = ['ArrowLeft','ArrowDown','ArrowRight'];
+  if (arrows.includes(e.code)) { e.preventDefault(); handleArrow(e.code); }
+}
+
+function handleSpace() {
+  if (recallState !== 0) return;
+  recallStartMs = performance.now();
+  recallState = 1;
+  const btn = document.getElementById('recall-start-btn');
+  if (btn) btn.style.display = 'none';
+  updateRecallStatus();
+}
+
+function handleArrow(code) {
+  if (recallState === 0) return; // space not yet pressed
+  const card = recallCards.find(c => c.key === code);
+  if (!card) return;
+
+  const now = performance.now();
+  if (recallState === 1) {
+    // Record whichever card is pressed first (including decoy)
+    press1ms = now;
+    recallPress1Card = card.id;
+    recallState = 2;
+    // Highlight pressed key
+    const keyEl = document.getElementById(`key-${card.id}-live`);
+    if (keyEl) keyEl.classList.add('pressed-1');
+    updateRecallStatus();
+  } else if (recallState === 2) {
+    press2ms = now;
+    recallPress2Card = card.id;
+    recallState = 3;
+    document.removeEventListener('keydown', onRecallKey);
+    const keyEl = document.getElementById(`key-${card.id}-live`);
+    if (keyEl) keyEl.classList.add('pressed-2');
+    updateRecallStatus();
+    setTimeout(finishRecall, 1200);
+  }
+}
+
+function updateRecallStatus() {
+  const el = document.getElementById('recall-status');
+  if (recallState === 0) {
+    el.innerHTML = `Press <span class="kbd">SPACE</span> to begin your mental replay.`;
+  } else if (recallState === 1) {
+    el.innerHTML = `Replaying… press the arrow key for the <strong>first real event</strong> when you reach it.`;
+  } else if (recallState === 2) {
+    el.innerHTML = `<span style="color:var(--green)">&#10003; First moment recorded.</span> &nbsp; Now press the arrow for the <strong>second real event</strong>.`;
+  } else {
+    el.innerHTML = `<span style="color:var(--green)">&#10003; Both moments recorded. Thank you.</span>`;
+  }
+}
+
+function finishRecall() {
+  const t   = TRIALS[trialIndex];
+  const gt  = t.event2Ms - t.event1Ms;
+  const est = (press1ms !== null && press2ms !== null) ? press2ms - press1ms : null;
+  const abs = est !== null ? Math.abs(est - gt) : null;
+  const pct = abs !== null ? abs / gt * 100 : null;
+
+  // Order correct: press1=ev1 and press2=ev2
+  const orderCorrect = (recallPress1Card === 'ev1' && recallPress2Card === 'ev2');
+  // Both real events pressed (ignoring decoy)
+  const bothCorrect  = (
+    (recallPress1Card === 'ev1' || recallPress1Card === 'ev2') &&
+    (recallPress2Card === 'ev1' || recallPress2Card === 'ev2') &&
+    recallPress1Card !== recallPress2Card
+  );
+
+  trialResults.push({
+    trialNum:        trialIndex + 1,
+    trialName:       t.name,
+    groundTruthMs:   gt,
+    estimatedMs:     est !== null ? Math.round(est) : null,
+    absoluteErrorMs: abs !== null ? Math.round(abs) : null,
+    percentError:    pct !== null ? parseFloat(pct.toFixed(1)) : null,
+    orderCorrect:    orderCorrect,
+    bothCorrect:     bothCorrect,
+    press1Card:      recallPress1Card,
+    press2Card:      recallPress2Card,
+    mathCorrect:     mathOK,
+    mathAttempted:   mathAttempted,
+    mathLog:         JSON.stringify(mathLog),
+  });
+
+  trialIndex++;
+  if (trialIndex < TOTAL_TRIALS) {
+    document.getElementById('between-title').textContent =
+      trialIndex === 1 ? 'Clip 1 complete — well done!' : 'Clip 2 complete — nearly there!';
+    document.getElementById('between-body').textContent =
+      `Take a moment to rest. When you are ready, press Continue to begin clip ${trialIndex + 1} of ${TOTAL_TRIALS}.`;
+    showScreen('s-between');
+  } else {
+    saveSession();
+    showScreen('s-done');
+  }
+}
+function nextTrial() {
+  beginTrialIntro();
+}
+
+/* ───────────────────────────────────────────────
+   EVENT RING FLASH
+─────────────────────────────────────────────── */
+function flashRing(id, cx, cy) {
+  const r = document.getElementById(id);
+  const sz = 64;
+  r.style.left   = (cx - sz/2) + 'px';
+  r.style.bottom = (cy - sz/2 + 10) + 'px';
+  r.classList.remove('flash');
+  void r.offsetWidth;
+  r.classList.add('flash');
+}
+
+function smileFlash() {
+  const ch = document.getElementById('char');
+  ch.classList.remove('smile-flash');
+  void ch.offsetWidth;
+  ch.classList.add('smile-flash');
+  setTimeout(() => ch.classList.remove('smile-flash'), 1000);
+}
+
+/* ───────────────────────────────────────────────
+   DATA
+─────────────────────────────────────────────── */
+function saveSession() {
+  const all = loadAll();
+  all.push({ participantID, sessionTimestamp, trials: trialResults,
+             distractionFree, distractionNote });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+}
+function loadAll() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+
+/* ───────────────────────────────────────────────
+   PASSCODE
+─────────────────────────────────────────────── */
+function showPcPrompt() {
+  document.getElementById('pc-input').value = '';
+  document.getElementById('pc-error').textContent = '';
+  document.getElementById('pc-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('pc-input').focus(), 80);
+}
+
+/* ── Distraction check ── */
+function selectDistraction(undisturbed) {
+  distractionFree = undisturbed;
+  // Update button styles
+  document.getElementById('dist-yes').className =
+    'btn distraction-opt' + (undisturbed ? ' selected-yes' : '');
+  document.getElementById('dist-no').className =
+    'btn sec distraction-opt' + (!undisturbed ? ' selected-no' : '');
+  // Show/hide note textarea
+  document.getElementById('dist-note-wrap').style.display = undisturbed ? 'none' : 'block';
+  // Show submit button
+  document.getElementById('dist-submit').style.display = 'inline-block';
+}
+
+function submitDistraction() {
+  if (distractionFree === null) return; // nothing selected yet
+  distractionNote = distractionFree
+    ? ''
+    : (document.getElementById('dist-note').value.trim());
+  showScreen('s-done-final');
+}
+
+function closePc() { document.getElementById('pc-overlay').classList.remove('show'); }
+function checkPc() {
+  if (document.getElementById('pc-input').value === PASSCODE) {
+    closePc(); renderResults(); showScreen('s-results');
+  } else {
+    document.getElementById('pc-error').textContent = 'Incorrect passcode.';
+    document.getElementById('pc-input').value = '';
+    document.getElementById('pc-input').focus();
+  }
+}
+document.getElementById('pc-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPc(); });
+
+/* ───────────────────────────────────────────────
+   RESULTS
+─────────────────────────────────────────────── */
+function acsCls(pct) { return pct === null ? '' : pct <= 15 ? 'acc-good' : pct <= 30 ? 'acc-ok' : 'acc-poor'; }
+function esc(s)      { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderResults() {
+  const all = loadAll();
+  const el  = document.getElementById('res-content');
+  if (!all.length) { el.innerHTML = '<p class="muted">No sessions recorded.</p>'; return; }
+
+  const latest = all[all.length - 1];
+  let html = `<p><strong>Latest session — ${esc(latest.participantID)}</strong>
+    &nbsp; <span class="muted">${new Date(latest.sessionTimestamp).toLocaleString()}</span></p>`;
+
+  html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin:10px 0">';
+  latest.trials.forEach(t => {
+    const cls = acsCls(t.percentError);
+    const pctStr = t.percentError !== null ? t.percentError + '%' : '—';
+    html += `<div style="flex:1;min-width:130px;text-align:center;border:1px solid var(--border);border-radius:8px;padding:10px">
+      <div class="muted" style="font-size:.8rem">Clip ${t.trialNum} — ${esc(t.trialName)}</div>
+      <div class="big-score ${cls}">${pctStr}</div>
+      <div class="muted" style="font-size:.78rem">GT: ${(t.groundTruthMs/1000).toFixed(0)}s
+        &nbsp; Est: ${t.estimatedMs !== null ? (t.estimatedMs/1000).toFixed(2)+'s' : '—'}</div>
+      <div class="muted" style="font-size:.78rem">Order: ${t.orderCorrect ? '✓' : '✗'}
+        &nbsp; Cards: ${t.press1Card||'—'} → ${t.press2Card||'—'}</div>
+      <div class="muted" style="font-size:.78rem">Maths: ${t.mathCorrect}/${t.mathAttempted}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  const validTrials = latest.trials.filter(t => t.percentError !== null);
+  if (validTrials.length) {
+    const mean = validTrials.reduce((s,t) => s + t.percentError, 0) / validTrials.length;
+    html += `<p style="text-align:center"><strong>Mean % error: <span class="${acsCls(mean)}">${mean.toFixed(1)}%</span></strong></p>`;
+  }
+  html += '<hr>';
+
+  html += `<p><strong>All sessions (${all.length})</strong></p>
+  <div style="overflow-x:auto"><table id="results-table">
+  <thead><tr>
+    <th>Participant</th><th>Date/Time</th>
+    <th>Clip 1 GT(s)</th><th>Clip 1 Est(s)</th><th>Clip 1 %Err</th><th>Clip 1 Order</th><th>Clip 1 Maths</th>
+    <th>Clip 2 GT(s)</th><th>Clip 2 Est(s)</th><th>Clip 2 %Err</th><th>Clip 2 Order</th><th>Clip 2 Maths</th>
+    <th>Clip 3 GT(s)</th><th>Clip 3 Est(s)</th><th>Clip 3 %Err</th><th>Clip 3 Order</th><th>Clip 3 Maths</th>
+    <th>Mean %Err</th>
+  </tr></thead><tbody>`;
+
+  all.forEach(sess => {
+    const dt = new Date(sess.sessionTimestamp).toLocaleString();
+    const ts = sess.trials;
+    const valid = ts.filter(t => t.percentError !== null);
+    const avg = valid.length ? valid.reduce((s,t) => s + t.percentError, 0) / valid.length : null;
+    html += `<tr><td>${esc(sess.participantID)}</td><td>${dt}</td>`;
+    [0,1,2].forEach(i => {
+      const t = ts[i];
+      if (t) {
+        html += `<td>${(t.groundTruthMs/1000).toFixed(0)}</td>
+          <td>${t.estimatedMs !== null ? (t.estimatedMs/1000).toFixed(2) : '—'}</td>
+          <td class="${acsCls(t.percentError)}">${t.percentError !== null ? t.percentError+'%' : '—'}</td>
+          <td>${t.orderCorrect ? '✓' : '✗'}</td>
+          <td>${t.mathCorrect}/${t.mathAttempted}</td>`;
+      } else {
+        html += '<td colspan="5" class="muted">—</td>';
+      }
+    });
+    html += `<td class="${acsCls(avg)}"><strong>${avg !== null ? avg.toFixed(1)+'%' : '—'}</strong></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+/* ───────────────────────────────────────────────
+   CSV
+─────────────────────────────────────────────── */
+function downloadCSV() {
+  const all = loadAll();
+  if (!all.length) { alert('No data to export.'); return; }
+
+  const headers = [
+    'participantID','sessionTimestamp',
+    'trial1_name','trial1_groundTruthMs','trial1_estimatedMs','trial1_absErrMs','trial1_pctErr','trial1_orderCorrect','trial1_press1','trial1_press2','trial1_mathCorrect','trial1_mathAttempted',
+    'trial2_name','trial2_groundTruthMs','trial2_estimatedMs','trial2_absErrMs','trial2_pctErr','trial2_orderCorrect','trial2_press1','trial2_press2','trial2_mathCorrect','trial2_mathAttempted',
+    'trial3_name','trial3_groundTruthMs','trial3_estimatedMs','trial3_absErrMs','trial3_pctErr','trial3_orderCorrect','trial3_press1','trial3_press2','trial3_mathCorrect','trial3_mathAttempted',
+    'mean_pctErr',
+    'distraction_free','distraction_note',
+  ];
+
+  const rows = all.map(sess => {
+    const ts  = sess.trials;
+    const valid = ts.filter(t => t.percentError !== null);
+    const avg = valid.length ? valid.reduce((s,t) => s + t.percentError, 0) / valid.length : '';
+    const row = [sess.participantID, sess.sessionTimestamp];
+    [0,1,2].forEach(i => {
+      const t = ts[i];
+      if (t) {
+        row.push(
+          t.trialName, t.groundTruthMs,
+          t.estimatedMs ?? '', t.absoluteErrorMs ?? '', t.percentError ?? '',
+          t.orderCorrect ? 'TRUE' : 'FALSE',
+          t.press1Card ?? '', t.press2Card ?? '',
+          t.mathCorrect, t.mathAttempted
+        );
+      } else {
+        row.push('','','','','','','','','','');
+      }
+    });
+    row.push(avg !== '' ? parseFloat(avg).toFixed(1) : '');
+    // distraction fields — handle sessions saved before this feature existed
+    const df = sess.distractionFree;
+    row.push(df === null || df === undefined ? '' : (df ? 'TRUE' : 'FALSE'));
+    row.push(sess.distractionNote ?? '');
+    return row.map(v => {
+      const s = String(v ?? '');
+      return (s.includes(',') || s.includes('"') || s.includes('\n'))
+        ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }).join(',');
+  });
+
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `BTED_data_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearData() {
+  if (confirm('Delete all BTED data from this browser?')) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderResults();
+  }
+}
+</script>
+</body>
+</html>
