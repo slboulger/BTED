@@ -1276,36 +1276,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 }
 
 /* Chair at table */
-#t3-chair {
-  position: absolute; bottom: 85px; left: 90px;
-  width: 48px; height: 60px;
-  z-index: 4;
-}
-.chair-seat {
-  position: absolute; bottom: 24px; left: 0; right: 0; height: 8px;
-  background: linear-gradient(to bottom, #9a7040, #7a5020);
-  border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,.25);
-  border-top: 2px solid #b8904a;
-}
-.chair-back {
-  position: absolute; bottom: 32px; left: 4px; right: 4px; height: 28px;
-  background: linear-gradient(to bottom, #9a7040, #7a5020);
-  border-radius: 3px 3px 0 0;
-  border-top: 2px solid #b8904a;
-  border-left: 2px solid #6a4010; border-right: 2px solid #6a4010;
-}
-.chair-back::before {
-  content: ''; position: absolute; top: 8px; left: 6px; right: 6px; height: 8px;
-  border: 1.5px solid #6a4010; border-radius: 2px;
-}
-.chair-leg-l, .chair-leg-r {
-  position: absolute; bottom: 0; width: 6px; height: 26px;
-  background: linear-gradient(to right, #c8a060, #a07830);
-  border-radius: 2px;
-  border: 1.5px solid #6a4010;
-}
-.chair-leg-l { left: 6px; transform: rotate(-4deg); transform-origin: top; }
-.chair-leg-r { right: 6px; transform: rotate(4deg); transform-origin: top; }
+
 
 
 #t3-book {
@@ -1918,7 +1889,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 .p-t3-table  { position:absolute; bottom:85px; left:20px; width:230px; height:16px; background:linear-gradient(to bottom,#6b4423,#4e3018); border-radius:4px; box-shadow:0 4px 10px rgba(0,0,0,.35); z-index:3; }
 .p-t3-table::before { content:''; position:absolute; bottom:-48px; left:18px; width:14px; height:48px; background:linear-gradient(to right,#3a2010,#5a3018); border-radius:2px; }
 .p-t3-table::after  { content:''; position:absolute; bottom:-48px; right:18px; width:14px; height:48px; background:linear-gradient(to right,#3a2010,#5a3018); border-radius:2px; }
-.p-t3-chair  { position:absolute; bottom:85px; left:90px; width:48px; height:60px; z-index:4; }
 .p-t3-book   { position:absolute; bottom:101px; left:60px; width:70px; height:50px; z-index:8; }
 .p-t3-book-page { position:absolute; top:4px; right:4px; bottom:4px; left:11px; background:linear-gradient(to right,#f8f4ec,#eee8e0); border-radius:0 3px 3px 0; transform-origin:left center; }
 .p-t3-book.page-turn .p-t3-book-page { transform:perspective(120px) rotateY(-170deg); background:linear-gradient(to left,#f0ece4,#e8e4dc); }
@@ -2130,14 +2100,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
          <div id="t3-splash"></div>
          <div id="t3-counter-top"></div>
         <div id="t3-counter"></div>
-        <div id="t3-floor"></div>
-        <div id="t3-table"><div class="table-shine"></div></div>
-        <div id="t3-chair">
-          <div class="chair-back"></div>
-          <div class="chair-seat"></div>
-          <div class="chair-leg-l"></div>
-          <div class="chair-leg-r"></div>
-        </div>
+         <div id="t3-floor"></div>
+         <div id="t3-table"><div class="table-shine"></div></div>
+
         <div id="t3-bowl"></div>
         <div id="t3-book">
           <div class="book-cover"></div>
@@ -2629,12 +2594,12 @@ const TRIALS = [
       { t:17500, x: 350, y: 85, face: 'l', pose: 'walk' },
       { t:19500, x: 160, y: 85, face: 'l', pose: 'walk' },
       { t:21000, x: 100, y: 85, face: 'l', pose: 'walk' },
-      { t:22000, x:  72, y: 85, face: 'l', pose: 'stand' },
-      { t:23000, x:  72, y: 85, face: 'l', pose: 'sit' },
-      { t:24700, x:  72, y: 75, face: 'r', pose: 'bend' },
-      { t:25000, x:  72, y: 75, face: 'r', pose: 'throw' }, // EVENT B — page turn
-      { t:25600, x:  72, y: 75, face: 'r', pose: 'sit' },
-      { t:26500, x:  72, y: 75, face: 'r', pose: 'sit' },
+       { t:22000, x:  72, y: 85, face: 'l', pose: 'stand' },
+       { t:23000, x:  72, y: 85, face: 'l', pose: 'stand' },
+       { t:24700, x:  72, y: 85, face: 'r', pose: 'bend' },
+       { t:25000, x:  72, y: 85, face: 'r', pose: 'throw' }, // EVENT B — page turn
+       { t:25600, x:  72, y: 85, face: 'r', pose: 'stand' },
+       { t:26500, x:  72, y: 85, face: 'r', pose: 'stand' },
     ],
     onEvent1: () => {
       document.getElementById('t3-tap-handle').classList.add('on');
@@ -3205,11 +3170,9 @@ function buildFreezeFrames() {
     ${tapOn ? '<div class="p-t3-water"></div>' : ''}
     <div class="p-t3-counter-top"></div>
     <div class="p-t3-counter"></div>
-    <div class="p-t3-floor"></div>
-    <div class="p-t3-table"><div class="table-shine"></div></div>
-    <div class="p-t3-chair"><div class="chair-back"></div><div class="chair-seat"></div>
-      <div class="chair-leg-l"></div><div class="chair-leg-r"></div></div>
-    <div class="p-t3-book${pageOpen ? ' page-turn' : ''}"><div class="book-cover"></div>
+     <div class="p-t3-floor"></div>
+     <div class="p-t3-table"><div class="table-shine"></div></div>
+     <div class="p-t3-book${pageOpen ? ' page-turn' : ''}"><div class="book-cover"></div>
       <div class="book-spine"></div><div class="book-page-back"></div><div class="p-t3-book-page"></div></div>
     ${alexSVG(alexPose, alexX, alexY, alexFlip)}
   </div>`;
@@ -3230,7 +3193,7 @@ function buildFreezeFrames() {
     // ── Trial 3 ──
     {
       ev1:   t3Scene(true,  false, false,   'throw', 272, 85,  false),  // turns on tap, face-r=no flip
-      ev2:   t3Scene(true,  true,  false,   'throw', 72,  75,  false), // turns page, face-r=no flip
+      ev2:   t3Scene(true,  true,  false,   'throw', 72,  85,  false), // turns page, face-r=no flip
       decoy: t3Scene(false, false, true,    'throw', 80,  85,  false), // decoy: opens cupboard
     },
   ];
